@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: hr-management-system
+
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/hr_management_db}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}

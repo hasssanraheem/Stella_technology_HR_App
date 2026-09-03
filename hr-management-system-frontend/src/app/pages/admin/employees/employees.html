@@ -1,0 +1,309 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Employees</h1>
+      <p>Manage all employee accounts and profiles</p>
+    </div>
+    <button class="btn-primary" (click)="openAdd()">+ Add Employee</button>
+  </div>
+
+  <!-- Search -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search by name…" [value]="searchName()"
+             (input)="searchName.set($any($event.target).value)" (keyup.enter)="search()" />
+      @if (searchName()) { <button class="clear-btn" (click)="clearSearch()">✕</button> }
+    </div>
+    <button class="btn-secondary" (click)="search()">Search</button>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    @if (loading()) {
+      <div class="loading"><div class="spinner"></div><p>Loading employees…</p></div>
+    } @else if (!employees().length) {
+      <div class="empty"><span>👥</span><p>No employees found.</p></div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Employee ID</th>
+              <th>Name / Email</th>
+              <th>Designation</th>
+              <th>Department</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (emp of employees(); track emp.employeeId) {
+              <tr>
+                <td class="mono">{{ emp.employeeId }}</td>
+                <td>
+                  <p class="emp-name">{{ emp.name }}</p>
+                  <p class="emp-email">{{ emp.email }}</p>
+                </td>
+                <td>{{ emp.designation }}</td>
+                <td class="mono">{{ emp.departmentId || '—' }}</td>
+                <td><span class="badge" [class]="typeClass(emp.employeeType)">{{ emp.employeeType }}</span></td>
+                <td><span class="badge" [class]="statusClass(emp.status)">{{ emp.status }}</span></td>
+                <td>
+                  <div class="actions">
+                    <button class="act-btn" title="Edit"            (click)="openEdit(emp)">✏️</button>
+                    <button class="act-btn" title="Change Type"     (click)="openType(emp)">🔄</button>
+                    <button class="act-btn" title="Add Note"        (click)="openNote(emp)">📝</button>
+                    <button class="act-btn" title="View History"    (click)="openHistory(emp)">📊</button>
+                    <button class="act-btn danger" title="Delete"   (click)="openDelete(emp)">🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- ── Add Employee Modal ── -->
+@if (showAddModal()) {
+  <div class="overlay" (click)="closeAdd()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add New Employee</h2>
+        <button class="close-btn" (click)="closeAdd()">✕</button>
+      </div>
+      @if (modalError()) { <div class="modal-error">⚠ {{ modalError() }}</div> }
+      <form [formGroup]="addForm" (ngSubmit)="submitAdd()" class="modal-body">
+
+        <div class="section-title">Login Credentials</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Email <span class="req">*</span></label>
+            <input type="email" formControlName="email" [class.invalid]="addForm.get('email')?.invalid && addForm.get('email')?.touched" />
+            @if (addForm.get('email')?.touched && addForm.get('email')?.invalid) { <span class="err">Valid email required</span> }
+          </div>
+          <div class="field">
+            <label>Password <span class="req">*</span></label>
+            <input type="password" formControlName="password" placeholder="Min 8 chars" [class.invalid]="addForm.get('password')?.invalid && addForm.get('password')?.touched" />
+            @if (addForm.get('password')?.touched && addForm.get('password')?.invalid) { <span class="err">Min 8 characters</span> }
+          </div>
+          <div class="field">
+            <label>Role <span class="req">*</span></label>
+            <select formControlName="role">
+              @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+            </select>
+          </div>
+        </div>
+
+        <div class="section-title">Personal Details</div>
+        <div class="form-grid">
+          <div class="field span2">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" formControlName="name" [class.invalid]="addForm.get('name')?.invalid && addForm.get('name')?.touched" />
+            @if (addForm.get('name')?.touched && addForm.get('name')?.invalid) { <span class="err">Name required</span> }
+          </div>
+          <div class="field">
+            <label>Date of Birth <span class="req">*</span></label>
+            <input type="date" formControlName="dateOfBirth" />
+          </div>
+          <div class="field">
+            <label>Gender <span class="req">*</span></label>
+            <select formControlName="gender">
+              @for (g of genders; track g) { <option [value]="g">{{ g }}</option> }
+            </select>
+          </div>
+          <div class="field">
+            <label>Phone <span class="req">*</span></label>
+            <input type="text" formControlName="phone" />
+          </div>
+          <div class="field span2">
+            <label>Address <span class="req">*</span></label>
+            <input type="text" formControlName="address" />
+          </div>
+        </div>
+
+        <div class="section-title">Employment</div>
+        <div class="form-grid">
+          <div class="field span2">
+            <label>Designation <span class="req">*</span></label>
+            <input type="text" formControlName="designation" />
+          </div>
+          <div class="field">
+            <label>Department <span class="req">*</span></label>
+            <select formControlName="departmentId" [class.invalid]="addForm.get('departmentId')?.invalid && addForm.get('departmentId')?.touched">
+              <option value="">Select department</option>
+              @for (d of departments(); track d.departmentId) { <option [value]="d.departmentId">{{ d.name }} ({{ d.departmentId }})</option> }
+            </select>
+            @if (addForm.get('departmentId')?.touched && addForm.get('departmentId')?.invalid) { <span class="err">Required</span> }
+          </div>
+          <div class="field">
+            <label>Date of Joining <span class="req">*</span></label>
+            <input type="date" formControlName="dateOfJoining" />
+          </div>
+          <div class="field">
+            <label>Employee Type</label>
+            <select formControlName="employeeType">
+              @for (t of employeeTypes; track t) { <option [value]="t">{{ t }}</option> }
+            </select>
+          </div>
+        </div>
+
+        <div class="section-title">Compensation</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Basic Salary (PKR) <span class="req">*</span></label>
+            <input type="number" formControlName="salary" min="0" />
+          </div>
+          <div class="field">
+            <label>Allowances (PKR)</label>
+            <input type="number" formControlName="allowances" min="0" />
+          </div>
+          <div class="field">
+            <label>Deductions (PKR)</label>
+            <input type="number" formControlName="deductions" min="0" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeAdd()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="modalLoading()">
+            @if (modalLoading()) { <span class="spin"></span> } Add Employee
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ── Edit Modal ── -->
+@if (showEditModal()) {
+  <div class="overlay" (click)="closeEdit()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Edit Employee — {{ selected()?.employeeId }}</h2>
+        <button class="close-btn" (click)="closeEdit()">✕</button>
+      </div>
+      @if (modalError()) { <div class="modal-error">⚠ {{ modalError() }}</div> }
+      <form [formGroup]="editForm" (ngSubmit)="submitEdit()" class="modal-body">
+        <div class="form-grid">
+          <div class="field span2"><label>Full Name <span class="req">*</span></label><input type="text" formControlName="name" /></div>
+          <div class="field"><label>Email <span class="req">*</span></label><input type="email" formControlName="email" /></div>
+          <div class="field"><label>Phone <span class="req">*</span></label><input type="text" formControlName="phone" /></div>
+          <div class="field"><label>Gender</label><select formControlName="gender">@for(g of genders;track g){<option [value]="g">{{g}}</option>}</select></div>
+          <div class="field"><label>Date of Birth</label><input type="date" formControlName="dateOfBirth" /></div>
+          <div class="field span2"><label>Address</label><input type="text" formControlName="address" /></div>
+          <div class="field span2"><label>Designation <span class="req">*</span></label><input type="text" formControlName="designation" /></div>
+          <div class="field"><label>Department <span class="req">*</span></label>
+            <select formControlName="departmentId">
+              @for(d of departments();track d.departmentId){<option [value]="d.departmentId">{{d.name}}</option>}
+            </select>
+          </div>
+          <div class="field"><label>Date of Joining</label><input type="date" formControlName="dateOfJoining" /></div>
+          <div class="field"><label>Employee Type</label><select formControlName="employeeType">@for(t of employeeTypes;track t){<option [value]="t">{{t}}</option>}</select></div>
+          <div class="field"><label>Salary (PKR)</label><input type="number" formControlName="salary" min="0" /></div>
+          <div class="field"><label>Allowances (PKR)</label><input type="number" formControlName="allowances" min="0" /></div>
+          <div class="field"><label>Deductions (PKR)</label><input type="number" formControlName="deductions" min="0" /></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeEdit()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="modalLoading()">@if(modalLoading()){<span class="spin"></span>} Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ── Change Type Modal ── -->
+@if (showTypeModal()) {
+  <div class="overlay" (click)="closeType()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h2>Change Employee Type</h2><button class="close-btn" (click)="closeType()">✕</button></div>
+      @if (modalError()) { <div class="modal-error">⚠ {{ modalError() }}</div> }
+      <div class="modal-body">
+        <p class="modal-desc">Changing type for <strong>{{ selected()?.name }}</strong> ({{ selected()?.employeeId }})</p>
+        <div class="field" [formGroup]="typeForm">
+          <label>Employee Type</label>
+          <select formControlName="employeeType">
+            @for (t of employeeTypes; track t) { <option [value]="t">{{ t }}</option> }
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeType()">Cancel</button>
+          <button class="btn-primary" (click)="submitType()" [disabled]="modalLoading()">@if(modalLoading()){<span class="spin"></span>} Update</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Performance Note Modal ── -->
+@if (showNoteModal()) {
+  <div class="overlay" (click)="closeNote()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h2>Add Performance Note</h2><button class="close-btn" (click)="closeNote()">✕</button></div>
+      @if (modalError()) { <div class="modal-error">⚠ {{ modalError() }}</div> }
+      <div class="modal-body">
+        <p class="modal-desc">Adding note for <strong>{{ selected()?.name }}</strong></p>
+        <div class="field" [formGroup]="noteForm">
+          <label>Note <span class="req">*</span></label>
+          <textarea formControlName="note" rows="4" placeholder="Write a performance note (min. 10 characters)…"
+            [class.invalid]="noteForm.get('note')?.invalid && noteForm.get('note')?.touched"></textarea>
+          @if (noteForm.get('note')?.touched && noteForm.get('note')?.hasError('required')) { <span class="err">Note required</span> }
+          @if (noteForm.get('note')?.touched && noteForm.get('note')?.hasError('minlength')) { <span class="err">Min 10 characters</span> }
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeNote()">Cancel</button>
+          <button class="btn-primary" (click)="submitNote()" [disabled]="modalLoading()">@if(modalLoading()){<span class="spin"></span>} Save Note</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── History Modal ── -->
+@if (showHistoryModal()) {
+  <div class="overlay" (click)="closeHistory()">
+    <div class="modal modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h2>History — {{ selected()?.name }}</h2><button class="close-btn" (click)="closeHistory()">✕</button></div>
+      <div class="modal-body">
+        @if (!history().length) {
+          <div class="empty"><span>📂</span><p>No history records yet.</p></div>
+        } @else {
+          <div class="history-list">
+            @for (h of history(); track h.historyId) {
+              <div class="history-item">
+                <div class="history-icon">{{ historyIcon(h.type) }}</div>
+                <div class="history-body">
+                  <p class="history-type">{{ h.type }}</p>
+                  @if (h.previousValue) { <p class="history-change">{{ h.previousValue }} → {{ h.newValue }}</p> }
+                  @if (h.note) { <p class="history-note">"{{ h.note }}"</p> }
+                  <p class="history-meta">By {{ h.recordedBy }} · {{ h.recordedAt | date:'dd MMM yyyy' }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Delete Confirm ── -->
+@if (showDeleteModal()) {
+  <div class="overlay" (click)="closeDelete()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h2>Delete Employee</h2><button class="close-btn" (click)="closeDelete()">✕</button></div>
+      <div class="modal-body">
+        <p class="modal-desc">Are you sure you want to delete <strong>{{ selected()?.name }}</strong> ({{ selected()?.employeeId }})? This cannot be undone.</p>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeDelete()">Cancel</button>
+          <button class="btn-danger" (click)="confirmDelete()">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

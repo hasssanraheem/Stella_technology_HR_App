@@ -1,0 +1,24 @@
+# Spring Boot
+demo/target/
+demo/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+
+# Angular / Node
+hr-management-system-frontend/node_modules/
+hr-management-system-frontend/dist/
+hr-management-system-frontend/.angular/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.DS_Store
+
+# Environment secrets
+.env
+demo/.env
+
+# Logs
+*.log

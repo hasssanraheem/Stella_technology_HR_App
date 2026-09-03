@@ -1,0 +1,143 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Departments</h1>
+      <p>Manage company departments and their managers</p>
+    </div>
+    <button class="btn-primary" (click)="openAdd()">+ Add Department</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search by name…" [value]="searchQuery()"
+             (input)="searchQuery.set($any($event.target).value)" (keyup.enter)="search()" />
+      @if (searchQuery()) { <button class="clear-btn" (click)="clearSearch()">✕</button> }
+    </div>
+    <button class="btn-secondary" (click)="search()">Search</button>
+  </div>
+
+  <div class="card">
+    @if (loading()) {
+      <div class="loading"><div class="spinner"></div><p>Loading…</p></div>
+    } @else if (!departments().length) {
+      <div class="empty"><span>🏢</span><p>No departments found.</p></div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Department ID</th>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Manager ID</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (dept of departments(); track dept.departmentId) {
+              <tr>
+                <td class="mono">{{ dept.departmentId }}</td>
+                <td><strong>{{ dept.name }}</strong></td>
+                <td class="muted">{{ dept.description || '—' }}</td>
+                <td class="mono">{{ dept.managerId || '—' }}</td>
+                <td class="muted">{{ dept.createdAt | date:'dd MMM yyyy' }}</td>
+                <td>
+                  <div class="actions">
+                    <button class="act-btn" (click)="openEdit(dept)" title="Edit">✏️</button>
+                    <button class="act-btn danger" (click)="openDelete(dept)" title="Delete">🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- ── Add Modal ── -->
+@if (showAddModal()) {
+  <div class="overlay" (click)="closeAdd()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h2>Add Department</h2><button class="close-btn" (click)="closeAdd()">✕</button></div>
+      @if (modalError()) { <div class="modal-error">⚠ {{ modalError() }}</div> }
+      <form [formGroup]="deptForm" (ngSubmit)="submitAdd()" class="modal-body">
+        <div class="field">
+          <label>Department Name <span class="req">*</span></label>
+          <input type="text" formControlName="name" [class.invalid]="deptForm.get('name')?.invalid && deptForm.get('name')?.touched" />
+          @if (deptForm.get('name')?.touched && deptForm.get('name')?.invalid) { <span class="err">Name required</span> }
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <input type="text" formControlName="description" placeholder="Optional" />
+        </div>
+        <div class="field">
+          <label>Manager</label>
+          <select formControlName="managerId">
+            <option value="">No manager assigned</option>
+            @for (m of managers(); track m.employeeId) {
+              <option [value]="m.employeeId">{{ m.name }} ({{ m.employeeId }})</option>
+            }
+          </select>
+          <span class="field-hint">Only employees with type MANAGER are listed</span>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeAdd()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="modalLoading()">@if(modalLoading()){<span class="spin"></span>} Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ── Edit Modal ── -->
+@if (showEditModal()) {
+  <div class="overlay" (click)="closeEdit()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h2>Edit — {{ selected()?.name }}</h2><button class="close-btn" (click)="closeEdit()">✕</button></div>
+      @if (modalError()) { <div class="modal-error">⚠ {{ modalError() }}</div> }
+      <form [formGroup]="deptForm" (ngSubmit)="submitEdit()" class="modal-body">
+        <div class="field">
+          <label>Department Name <span class="req">*</span></label>
+          <input type="text" formControlName="name" />
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <input type="text" formControlName="description" />
+        </div>
+        <div class="field">
+          <label>Manager</label>
+          <select formControlName="managerId">
+            <option value="">No manager assigned</option>
+            @for (m of managers(); track m.employeeId) {
+              <option [value]="m.employeeId">{{ m.name }} ({{ m.employeeId }})</option>
+            }
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeEdit()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="modalLoading()">@if(modalLoading()){<span class="spin"></span>} Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ── Delete Confirm ── -->
+@if (showDeleteModal()) {
+  <div class="overlay" (click)="closeDelete()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h2>Delete Department</h2><button class="close-btn" (click)="closeDelete()">✕</button></div>
+      <div class="modal-body">
+        <p class="modal-desc">Delete <strong>{{ selected()?.name }}</strong>? This cannot be undone.</p>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeDelete()">Cancel</button>
+          <button class="btn-danger" (click)="confirmDelete()">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
