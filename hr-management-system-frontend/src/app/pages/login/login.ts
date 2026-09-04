@@ -39,6 +39,8 @@ export class LoginComponent {
         this.loading.set(false);
         if (res.role === 'ADMIN') {
           this.router.navigate(['/admin/employees']);
+        } else if (res.role === 'HR') {
+          this.router.navigate(['/hr/leaves']);
         } else {
           this.router.navigate(['/dashboard']);
         }

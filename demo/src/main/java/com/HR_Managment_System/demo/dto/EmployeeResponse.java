@@ -31,6 +31,7 @@ public class EmployeeResponse {
     private Double deductions;
     private EmployeeStatus status;
     private EmployeeType employeeType;
+    private String userRole;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

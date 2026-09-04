@@ -1,45 +1,32 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { PayrollService } from '../../../core/services/payroll.service';
 import { EmployeeService } from '../../../core/services/employee.service';
-import { DepartmentService } from '../../../core/services/department.service';
 
 @Component({
-  selector: 'app-payroll',
+  selector: 'app-hr-payroll',
   standalone: true,
   imports: [ReactiveFormsModule, DecimalPipe],
-  templateUrl: './payroll.html',
-  styleUrl: './payroll.css'
+  templateUrl: './hr-payroll.html',
+  styleUrl: './hr-payroll.css'
 })
-export class PayrollComponent implements OnInit {
+export class HrPayrollComponent implements OnInit {
   private payrollSvc = inject(PayrollService);
   private empSvc     = inject(EmployeeService);
-  private deptSvc    = inject(DepartmentService);
   private fb         = inject(FormBuilder);
 
-  payrolls     = signal<any[]>([]);
-  employees    = signal<any[]>([]);
-  departments  = signal<any[]>([]);
-  loading      = signal(true);
-  genLoading   = signal(false);
-  genError     = signal('');
-  genSuccess   = signal('');
+  payrolls      = signal<any[]>([]);
+  employees     = signal<any[]>([]);
+  loading       = signal(true);
+  genLoading    = signal(false);
+  genError      = signal('');
+  genSuccess    = signal('');
   actionLoading = signal('');
 
   filterMonth  = signal('');
   filterYear   = signal('');
   filterStatus = signal('');
-  filterDept   = signal('');
-
-  displayedPayrolls = computed(() => {
-    const dept = this.filterDept();
-    if (!dept) return this.payrolls();
-    const empIds = new Set(
-      this.employees().filter(e => e.departmentId === dept).map(e => e.employeeId)
-    );
-    return this.payrolls().filter(p => empIds.has(p.employeeId));
-  });
 
   readonly months = ['','January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
@@ -54,8 +41,15 @@ export class PayrollComponent implements OnInit {
 
   ngOnInit() {
     this.loadPayroll();
-    this.empSvc.getAll(0, 200).subscribe({ next: page => this.employees.set(page.content ?? []), error: () => {} });
-    this.deptSvc.getAll().subscribe({ next: v => this.departments.set(v), error: () => {} });
+    this.empSvc.getMe().subscribe({
+      next: me => {
+        this.empSvc.getAll(0, 200, '', '', '', me.departmentId).subscribe({
+          next: page => this.employees.set(page.content ?? []),
+          error: () => {}
+        });
+      },
+      error: () => {}
+    });
   }
 
   loadPayroll() {
@@ -70,7 +64,7 @@ export class PayrollComponent implements OnInit {
   }
 
   applyFilter() { this.loadPayroll(); }
-  clearFilter() { this.filterMonth.set(''); this.filterYear.set(''); this.filterStatus.set(''); this.filterDept.set(''); this.loadPayroll(); }
+  clearFilter() { this.filterMonth.set(''); this.filterYear.set(''); this.filterStatus.set(''); this.loadPayroll(); }
 
   submitGenerate() {
     if (this.genForm.invalid) { this.genForm.markAllAsTouched(); return; }

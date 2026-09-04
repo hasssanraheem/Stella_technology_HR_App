@@ -15,6 +15,10 @@ public interface EmployeeRepository extends MongoRepository<Employee, String> {
 
     Optional<Employee> findByEmail(String email);
 
+    long countByDepartmentId(String departmentId);
+
+    java.util.List<Employee> findByDepartmentId(String departmentId);
+
     boolean existsByEmail(String email);
 
     boolean existsByEmployeeId(String employeeId);
@@ -22,7 +26,8 @@ public interface EmployeeRepository extends MongoRepository<Employee, String> {
     @Query("{ $and: [ " +
            "{ $or: [ { 'name': { $regex: ?0, $options: 'i' } }, { $expr: { $eq: [?0, ''] } } ] }, " +
            "{ $or: [ { 'departmentId': ?1 }, { $expr: { $eq: [?1, ''] } } ] }, " +
-           "{ $or: [ { 'status': ?2 }, { $expr: { $eq: [?2, null] } } ] } " +
+           "{ $or: [ { 'status': ?2 }, { $expr: { $eq: [?2, null] } } ] }, " +
+           "{ $or: [ { 'userRole': { $regex: ?3, $options: 'i' } }, { $expr: { $eq: [?3, ''] } } ] } " +
            "] }")
-    Page<Employee> findByFilters(String name, String departmentId, EmployeeStatus status, Pageable pageable);
+    Page<Employee> findByFilters(String name, String departmentId, EmployeeStatus status, String userRole, Pageable pageable);
 }

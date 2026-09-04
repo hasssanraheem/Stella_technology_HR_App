@@ -124,3 +124,56 @@ tr:hover td { background: #f8fafc; }
   border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
   border-radius: 50%; animation: spin .6s linear infinite;
 }
+
+/* ── Reassign button (Unassigned row) ── */
+.reassign-btn {
+  width: auto; padding: .25rem .65rem; font-size: .75rem; font-weight: 600;
+  color: #7c3aed; border-color: #ddd6fe; background: #f5f3ff;
+  white-space: nowrap;
+}
+.reassign-btn:hover { background: #ede9fe; border-color: #c4b5fd; }
+
+/* ── System department row ── */
+.system-row td { background: #fafafa; color: #94a3b8; }
+.system-row:hover td { background: #f1f5f9; }
+.system-badge {
+  display: inline-block; margin-left: .4rem;
+  padding: .1rem .45rem; border-radius: 99px;
+  background: #ede9fe; color: #7c3aed;
+  font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+}
+
+/* ── Reassign modal ── */
+.reassign-info {
+  display: flex; align-items: flex-start; gap: .75rem;
+  background: #fef9c3; border: 1px solid #fde047;
+  border-radius: 10px; padding: .85rem 1rem;
+}
+.reassign-icon { font-size: 1.4rem; flex-shrink: 0; }
+.reassign-info p { font-size: .875rem; color: #713f12; margin: 0; line-height: 1.5; }
+
+.reassign-option {
+  display: flex; align-items: flex-start; gap: .85rem;
+  border: 1.5px solid #e2e8f0; border-radius: 10px;
+  padding: .9rem 1rem; cursor: pointer; transition: border-color .15s, background .15s;
+}
+.reassign-option:hover { border-color: #a5b4fc; background: #f8f9ff; }
+.reassign-option.selected-option { border-color: #6366f1; background: #eef2ff; }
+.reassign-option strong { font-size: .875rem; color: #0f172a; }
+.reassign-option p { font-size: .8rem; color: #64748b; margin: .25rem 0 0; }
+
+.radio-dot {
+  width: 17px; height: 17px; border-radius: 50%;
+  border: 2px solid #cbd5e1; background: #fff;
+  flex-shrink: 0; margin-top: .15rem; transition: border-color .15s;
+}
+.radio-dot.active {
+  border-color: #6366f1; border-width: 5px;
+}
+
+.reassign-select {
+  margin-top: .5rem; width: 100%; padding: .45rem .7rem;
+  border: 1px solid #e2e8f0; border-radius: 7px;
+  font-size: .85rem; outline: none;
+}
+.reassign-select:focus { border-color: #6366f1; }

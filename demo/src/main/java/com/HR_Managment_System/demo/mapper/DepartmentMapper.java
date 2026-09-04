@@ -16,6 +16,8 @@ public class DepartmentMapper {
                 .name(request.getName())
                 .description(request.getDescription())
                 .managerId(request.getManagerId())
+                .hrId(request.getHrId())
+                .isSystem(false)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -27,6 +29,8 @@ public class DepartmentMapper {
                 .name(department.getName())
                 .description(department.getDescription())
                 .managerId(department.getManagerId())
+                .hrId(department.getHrId())
+                .isSystem(department.isSystem())
                 .createdAt(department.getCreatedAt())
                 .updatedAt(department.getUpdatedAt())
                 .build();
@@ -36,6 +40,7 @@ public class DepartmentMapper {
         department.setName(request.getName());
         department.setDescription(request.getDescription());
         department.setManagerId(request.getManagerId());
+        department.setHrId(request.getHrId());
         department.setUpdatedAt(LocalDateTime.now());
     }
 }

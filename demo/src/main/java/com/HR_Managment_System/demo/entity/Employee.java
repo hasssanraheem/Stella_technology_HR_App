@@ -56,6 +56,8 @@ public class Employee {
     @Builder.Default
     private EmployeeStatus status = EmployeeStatus.ACTIVE;
 
+    private String userRole;
+
     @Builder.Default
     private EmployeeType employeeType = EmployeeType.EMPLOYEE;
 

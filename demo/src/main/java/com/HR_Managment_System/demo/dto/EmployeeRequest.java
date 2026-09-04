@@ -48,4 +48,6 @@ public class EmployeeRequest {
     private Double deductions = 0.0;
 
     private EmployeeType employeeType;
+
+    private String userRole;
 }

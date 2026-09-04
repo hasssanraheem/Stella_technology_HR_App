@@ -17,10 +17,12 @@ export class EmployeeService {
   }
 
   // Admin
-  getAll(page = 0, size = 20, name = '', status = '') {
+  getAll(page = 0, size = 20, name = '', status = '', userRole = '', departmentId = '') {
     const params: any = { page, size };
-    if (name)   params['name']   = name;
-    if (status) params['status'] = status;
+    if (name)         params['name']         = name;
+    if (status)       params['status']       = status;
+    if (userRole)     params['userRole']     = userRole;
+    if (departmentId) params['departmentId'] = departmentId;
     return this.http.get<any>(`${this.base}/employees`, { params });
   }
   create(data: any)             { return this.http.post<any>(`${this.base}/employees`, data); }

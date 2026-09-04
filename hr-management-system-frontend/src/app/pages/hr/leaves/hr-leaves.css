@@ -66,15 +66,6 @@
 .leave-emp { display: flex; align-items: center; gap: .4rem; font-size: .88rem; color: #374151; }
 .leave-emp strong { color: #0f172a; }
 .leave-emp-id { font-size: .72rem; color: #94a3b8; font-family: monospace; }
-
-.leave-meta { display: flex; gap: 1rem; font-size: .78rem; color: #64748b; flex-wrap: wrap; }
-
-.dept-filter {
-  padding: .5rem .75rem; border: 1px solid #e2e8f0; border-radius: 8px;
-  font-size: .875rem; background: #fff; outline: none;
-  transition: border-color .2s; min-width: 180px;
-}
-.dept-filter:focus { border-color: #6366f1; }
 .leave-dates { display: flex; align-items: center; gap: .5rem; font-size: .82rem; color: #374151; flex-wrap: wrap; }
 .days-tag { background: #ede9fe; color: #7c3aed; font-size: .72rem; font-weight: 600; padding: .15rem .5rem; border-radius: 99px; }
 .leave-reason { font-size: .84rem; color: #64748b; font-style: italic; margin: 0; border-left: 3px solid #e2e8f0; padding-left: .65rem; }

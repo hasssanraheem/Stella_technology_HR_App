@@ -30,6 +30,10 @@ public class Department {
 
     private String managerId;
 
+    private String hrId;
+
+    private boolean isSystem;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

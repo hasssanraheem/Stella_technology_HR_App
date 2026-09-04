@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
@@ -20,6 +20,23 @@ export class EmployeesComponent implements OnInit {
 
   employees   = signal<any[]>([]);
   departments = signal<any[]>([]);
+
+  filterType = signal<string>('');
+
+  unassignedCount = computed(() =>
+    this.employees().filter(e => e.departmentId === 'DEPT-0000').length
+  );
+
+  assignableDepts = computed(() =>
+    this.departments().filter(d => d.departmentId !== 'DEPT-0000')
+  );
+
+  // Client-side filter for EMPLOYEE/MANAGER types; HR is server-side via userRole
+  displayedEmployees = computed(() => {
+    const t = this.filterType();
+    if (!t || t === 'HR') return this.employees();
+    return this.employees().filter(e => e.employeeType === t);
+  });
   loading     = signal(true);
   searchName  = signal('');
 
@@ -37,20 +54,20 @@ export class EmployeesComponent implements OnInit {
 
   readonly genders       = ['MALE', 'FEMALE'];
   readonly roles         = ['EMPLOYEE', 'HR'];
-  readonly employeeTypes = ['EMPLOYEE', 'MANAGER'];
+  readonly employeeTypes = ['EMPLOYEE', 'MANAGER', 'HR'];
   readonly months = ['','January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
 
   addForm = this.fb.group({
     email:       ['', [Validators.required, Validators.email]],
-    password:    ['', [Validators.required, Validators.minLength(8)]],
+    password:    ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/)]],
     role:        ['EMPLOYEE', Validators.required],
     name:        ['', Validators.required],
     phone:       ['', Validators.required],
     gender:      ['MALE', Validators.required],
     dateOfBirth: ['', Validators.required],
     address:     ['', Validators.required],
-    departmentId:['', Validators.required],
+    departmentId:[''],
     designation: ['', Validators.required],
     dateOfJoining:['', Validators.required],
     salary:      [0, [Validators.required, Validators.min(0)]],
@@ -85,7 +102,8 @@ export class EmployeesComponent implements OnInit {
 
   loadEmployees() {
     this.loading.set(true);
-    this.empSvc.getAll(0, 50, this.searchName()).subscribe({
+    const role = this.filterType() === 'HR' ? 'HR' : '';
+    this.empSvc.getAll(0, 50, this.searchName(), '', role).subscribe({
       next: page => { this.employees.set(page.content ?? []); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
@@ -93,6 +111,8 @@ export class EmployeesComponent implements OnInit {
 
   search() { this.loadEmployees(); }
   clearSearch() { this.searchName.set(''); this.loadEmployees(); }
+
+  setTypeFilter(t: string) { this.filterType.set(t); this.loadEmployees(); }
 
   openAdd() { this.addForm.reset({ role: 'EMPLOYEE', gender: 'MALE', employeeType: 'EMPLOYEE', salary: 0, allowances: 0, deductions: 0 }); this.modalError.set(''); this.showAddModal.set(true); }
   closeAdd() { this.showAddModal.set(false); }
@@ -135,9 +155,10 @@ export class EmployeesComponent implements OnInit {
     this.auth.register(v.email!, v.password!, v.role!).subscribe({
       next: () => {
         const empData = { name: v.name, email: v.email, phone: v.phone, gender: v.gender,
-          dateOfBirth: v.dateOfBirth, address: v.address, departmentId: v.departmentId,
+          dateOfBirth: v.dateOfBirth, address: v.address, departmentId: v.departmentId || 'DEPT-0000',
           designation: v.designation, dateOfJoining: v.dateOfJoining,
-          salary: v.salary, allowances: v.allowances, deductions: v.deductions, employeeType: v.employeeType };
+          salary: v.salary, allowances: v.allowances, deductions: v.deductions, employeeType: v.employeeType,
+          userRole: v.role };
         this.empSvc.create(empData).subscribe({
           next: () => { this.modalLoading.set(false); this.closeAdd(); this.loadEmployees(); },
           error: err => { this.modalLoading.set(false); this.modalError.set(err.error?.message || 'Failed to create employee profile.'); }
@@ -178,6 +199,12 @@ export class EmployeesComponent implements OnInit {
       next: () => { this.closeDelete(); this.loadEmployees(); },
       error: () => this.closeDelete()
     });
+  }
+
+  deptName(id: string) {
+    if (!id) return '—';
+    const dept = this.departments().find(d => d.departmentId === id);
+    return dept ? dept.name : id;
   }
 
   statusClass(s: string) {

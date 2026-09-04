@@ -1,0 +1,37 @@
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">ST</div>
+      <div>
+        <p class="brand-name">Stella Technology</p>
+        <p class="brand-sub">HR Portal</p>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a routerLink="leaves" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📋</span> Leave Management
+      </a>
+      <a routerLink="payroll" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">💰</span> Payroll
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-dot"></div>
+        <div>
+          <p class="user-label">Signed in as</p>
+          <p class="user-email">{{ email }}</p>
+        </div>
+      </div>
+      <button class="btn-signout" (click)="logout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <router-outlet />
+  </main>
+
+</div>

@@ -20,4 +20,14 @@ public interface PayrollRepository extends MongoRepository<Payroll, String> {
     List<Payroll> findByPaymentStatus(PaymentStatus paymentStatus);
 
     List<Payroll> findByMonthAndYearAndPaymentStatus(int month, int year, PaymentStatus paymentStatus);
+
+    List<Payroll> findByYear(int year);
+
+    List<Payroll> findByMonth(int month);
+
+    List<Payroll> findByYearAndPaymentStatus(int year, PaymentStatus paymentStatus);
+
+    List<Payroll> findByMonthAndPaymentStatus(int month, PaymentStatus paymentStatus);
+
+    List<Payroll> findByEmployeeIdIn(java.util.Collection<String> employeeIds);
 }

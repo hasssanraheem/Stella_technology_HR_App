@@ -2,8 +2,46 @@
   <div class="page-header">
     <div>
       <h1>Payroll</h1>
-      <p>View all employee payroll records</p>
+      <p>Generate and manage payroll records for your department</p>
     </div>
+  </div>
+
+  <!-- Generate Payroll -->
+  <div class="gen-card">
+    <h2>Generate Payroll</h2>
+    @if (genSuccess()) { <div class="alert-success">✅ {{ genSuccess() }}</div> }
+    @if (genError())   { <div class="alert-error">⚠ {{ genError() }}</div> }
+    <form [formGroup]="genForm" (ngSubmit)="submitGenerate()" class="gen-form">
+      <div class="field">
+        <label>Employee <span class="req">*</span></label>
+        <select formControlName="employeeId" [class.invalid]="genForm.get('employeeId')?.invalid && genForm.get('employeeId')?.touched">
+          <option value="">Select employee</option>
+          @for (emp of employees(); track emp.employeeId) {
+            <option [value]="emp.employeeId">{{ emp.name }} ({{ emp.employeeId }})</option>
+          }
+        </select>
+        @if (genForm.get('employeeId')?.touched && genForm.get('employeeId')?.invalid) { <span class="err">Required</span> }
+      </div>
+      <div class="field">
+        <label>Month <span class="req">*</span></label>
+        <select formControlName="month" [class.invalid]="genForm.get('month')?.invalid && genForm.get('month')?.touched">
+          <option [value]="null">Select month</option>
+          @for (m of months; track $index; let i = $index) {
+            @if (i > 0) { <option [value]="i">{{ m }}</option> }
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label>Year <span class="req">*</span></label>
+        <select formControlName="year" [class.invalid]="genForm.get('year')?.invalid && genForm.get('year')?.touched">
+          <option [value]="null">Select year</option>
+          @for (y of years; track y) { <option [value]="y">{{ y }}</option> }
+        </select>
+      </div>
+      <button type="submit" class="btn-primary" [disabled]="genLoading()">
+        @if (genLoading()) { <span class="spin"></span> } Generate
+      </button>
+    </form>
   </div>
 
   <!-- Filter -->
@@ -23,12 +61,6 @@
         <option value="PAID">PAID</option>
         <option value="UNPAID">UNPAID</option>
       </select>
-      <select [value]="filterDept()" (change)="filterDept.set($any($event.target).value)">
-        <option value="">All Departments</option>
-        @for (d of departments(); track d.departmentId) {
-          <option [value]="d.departmentId">{{ d.name }}</option>
-        }
-      </select>
       <button class="btn-primary"   (click)="applyFilter()">Apply</button>
       <button class="btn-secondary" (click)="clearFilter()">Clear</button>
     </div>
@@ -38,7 +70,7 @@
   <div class="card">
     @if (loading()) {
       <div class="loading"><div class="spinner"></div><p>Loading…</p></div>
-    } @else if (!displayedPayrolls().length) {
+    } @else if (!payrolls().length) {
       <div class="empty"><span>💳</span><p>No payroll records found.</p></div>
     } @else {
       <div class="table-wrap">
@@ -53,10 +85,11 @@
               <th>Deductions</th>
               <th>Net Salary</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            @for (p of displayedPayrolls(); track p.payrollId) {
+            @for (p of payrolls(); track p.payrollId) {
               <tr>
                 <td class="mono">{{ p.payrollId }}</td>
                 <td>
@@ -69,6 +102,15 @@
                 <td class="danger-val">-{{ p.deductions | number:'1.0-0' }}</td>
                 <td class="net-val">{{ p.netSalary | number:'1.0-0' }}</td>
                 <td><span class="badge" [class]="statusClass(p.paymentStatus)">{{ p.paymentStatus }}</span></td>
+                <td>
+                  <button class="act-toggle"
+                    [class.paid]="p.paymentStatus === 'PAID'"
+                    [disabled]="actionLoading() === p.payrollId"
+                    (click)="markPaid(p)">
+                    @if (actionLoading() === p.payrollId) { <span class="spin-sm"></span> }
+                    @else { {{ p.paymentStatus === 'PAID' ? 'Mark Unpaid' : 'Mark Paid' }} }
+                  </button>
+                </td>
               </tr>
             }
           </tbody>

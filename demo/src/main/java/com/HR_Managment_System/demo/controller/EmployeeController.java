@@ -61,10 +61,11 @@ public class EmployeeController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String departmentId,
             @RequestParam(required = false) EmployeeStatus status,
+            @RequestParam(required = false) String userRole,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Page<EmployeeResponse> employees = employeeService.getAllEmployees(name, departmentId, status, page, size);
+        Page<EmployeeResponse> employees = employeeService.getAllEmployees(name, departmentId, status, userRole, page, size);
         return ResponseEntity.ok(employees);
     }
 
@@ -126,8 +127,8 @@ public class EmployeeController {
 
     @DeleteMapping("/{employeeId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> deleteEmployee(@PathVariable String employeeId) {
+    public ResponseEntity<Void> deleteEmployee(@PathVariable String employeeId) {
         employeeService.deleteEmployee(employeeId);
-        return ResponseEntity.ok("Employee deleted successfully");
+        return ResponseEntity.noContent().build();
     }
 }

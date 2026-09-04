@@ -1,6 +1,30 @@
 /* ── Page Layout ── */
 .page { padding: 2rem; max-width: 1400px; }
 
+/* ── Employee type filter pills ── */
+.type-filters { display: flex; gap: .35rem; margin-left: auto; }
+.type-btn {
+  padding: .38rem .85rem; border-radius: 99px;
+  border: 1.5px solid #e2e8f0; background: #fff;
+  font-size: .78rem; font-weight: 600; cursor: pointer;
+  color: #64748b; transition: all .15s;
+}
+.type-btn:hover { border-color: #a5b4fc; color: #4f46e5; }
+.type-btn.active              { background: #6366f1; color: #fff; border-color: #6366f1; }
+.type-btn.employee.active     { background: #3b82f6; border-color: #3b82f6; }
+.type-btn.manager.active      { background: #8b5cf6; border-color: #8b5cf6; }
+.type-btn.hr.active           { background: #0891b2; border-color: #0891b2; }
+
+/* ── Unassigned warning banner ── */
+.unassigned-banner {
+  display: flex; align-items: flex-start; gap: .75rem;
+  background: #fff7ed; border: 1.5px solid #fb923c;
+  border-radius: 10px; padding: .85rem 1.1rem; margin-bottom: 1.25rem;
+  font-size: .875rem; color: #7c2d12;
+}
+.unassigned-banner span { font-size: 1.2rem; flex-shrink: 0; }
+.unassigned-banner p { margin: 0; line-height: 1.5; }
+
 .page-header {
   display: flex;
   align-items: center;

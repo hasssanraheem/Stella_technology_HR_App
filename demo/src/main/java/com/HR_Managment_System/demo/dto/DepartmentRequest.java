@@ -12,4 +12,7 @@ public class DepartmentRequest {
     private String description;
 
     private String managerId;
+
+    @NotBlank(message = "HR assignment is required for each department")
+    private String hrId;
 }

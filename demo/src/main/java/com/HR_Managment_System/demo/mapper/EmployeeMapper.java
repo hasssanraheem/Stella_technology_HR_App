@@ -27,6 +27,7 @@ public class EmployeeMapper {
                 .allowances(request.getAllowances() != null ? request.getAllowances() : 0.0)
                 .deductions(request.getDeductions() != null ? request.getDeductions() : 0.0)
                 .employeeType(request.getEmployeeType() != null ? request.getEmployeeType() : EmployeeType.EMPLOYEE)
+                .userRole(request.getUserRole() != null ? request.getUserRole() : "EMPLOYEE")
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -49,6 +50,7 @@ public class EmployeeMapper {
                 .deductions(employee.getDeductions())
                 .status(employee.getStatus())
                 .employeeType(employee.getEmployeeType())
+                .userRole(employee.getUserRole())
                 .createdAt(employee.getCreatedAt())
                 .updatedAt(employee.getUpdatedAt())
                 .build();
@@ -69,6 +71,9 @@ public class EmployeeMapper {
         if (request.getDeductions() != null) employee.setDeductions(request.getDeductions());
         if (request.getEmployeeType() != null) {
             employee.setEmployeeType(request.getEmployeeType());
+        }
+        if (request.getUserRole() != null) {
+            employee.setUserRole(request.getUserRole());
         }
         employee.setUpdatedAt(LocalDateTime.now());
     }

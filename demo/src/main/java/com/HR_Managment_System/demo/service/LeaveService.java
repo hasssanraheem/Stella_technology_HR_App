@@ -90,7 +90,7 @@ public class LeaveService {
 
     public List<LeaveBalanceResponse> getAllLeaveBalances(String name) {
         if (name != null && !name.isBlank()) {
-            return employeeRepository.findByFilters(name, "", null, PageRequest.of(0, 100))
+            return employeeRepository.findByFilters(name, "", null, "", PageRequest.of(0, 100))
                     .stream()
                     .map(emp -> leaveBalanceRepository.findByEmployeeId(emp.getEmployeeId())
                             .map(leaveMapper::toBalanceResponse)
@@ -99,6 +99,23 @@ public class LeaveService {
                     .toList();
         }
         return leaveBalanceRepository.findAll()
+                .stream().map(leaveMapper::toBalanceResponse).toList();
+    }
+
+
+    public List<LeaveResponse> getLeavesByDepartment(String departmentId, LeaveStatus status) {
+        List<String> empIds = employeeRepository.findByDepartmentId(departmentId)
+                .stream().map(emp -> emp.getEmployeeId()).toList();
+        List<LeaveRequest> requests = (status != null)
+                ? leaveRequestRepository.findByEmployeeIdInAndStatus(empIds, status)
+                : leaveRequestRepository.findByEmployeeIdIn(empIds);
+        return requests.stream().map(leaveMapper::toResponse).toList();
+    }
+
+    public List<LeaveBalanceResponse> getLeaveBalancesByDepartment(String departmentId) {
+        List<String> empIds = employeeRepository.findByDepartmentId(departmentId)
+                .stream().map(emp -> emp.getEmployeeId()).toList();
+        return leaveBalanceRepository.findByEmployeeIdIn(empIds)
                 .stream().map(leaveMapper::toBalanceResponse).toList();
     }
 

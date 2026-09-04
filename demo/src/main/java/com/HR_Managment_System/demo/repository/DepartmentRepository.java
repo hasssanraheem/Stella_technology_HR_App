@@ -13,8 +13,12 @@ public interface DepartmentRepository extends MongoRepository<Department, String
 
     boolean existsByName(String name);
 
+    java.util.Optional<Department> findByHrId(String hrId);
+
     boolean existsByDepartmentId(String departmentId);
 
     @Query("{ 'name': { $regex: ?0, $options: 'i' } }")
     List<Department> searchByName(String name);
+
+    Optional<Department> findTopByOrderByDepartmentIdDesc();
 }

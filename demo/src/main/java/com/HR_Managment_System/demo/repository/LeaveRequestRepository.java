@@ -16,4 +16,8 @@ public interface LeaveRequestRepository extends MongoRepository<LeaveRequest, St
     List<LeaveRequest> findByStatus(LeaveStatus status);
 
     List<LeaveRequest> findByEmployeeIdAndStatus(String employeeId, LeaveStatus status);
+
+    List<LeaveRequest> findByEmployeeIdIn(java.util.Collection<String> employeeIds);
+
+    List<LeaveRequest> findByEmployeeIdInAndStatus(java.util.Collection<String> employeeIds, LeaveStatus status);
 }

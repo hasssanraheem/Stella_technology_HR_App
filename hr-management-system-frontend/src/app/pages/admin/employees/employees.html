@@ -7,7 +7,18 @@
     <button class="btn-primary" (click)="openAdd()">+ Add Employee</button>
   </div>
 
-  <!-- Search -->
+  <!-- Unassigned employees banner -->
+  @if (unassignedCount() > 0) {
+    <div class="unassigned-banner">
+      <span>⚠</span>
+      <p>
+        <strong>{{ unassignedCount() }} employee(s) are Unassigned</strong> —
+        their previous department was deleted. Please reassign them to a department.
+      </p>
+    </div>
+  }
+
+  <!-- Search & Type Filter -->
   <div class="toolbar">
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
@@ -16,14 +27,21 @@
       @if (searchName()) { <button class="clear-btn" (click)="clearSearch()">✕</button> }
     </div>
     <button class="btn-secondary" (click)="search()">Search</button>
+
+    <div class="type-filters">
+      <button class="type-btn"          [class.active]="filterType() === ''"         (click)="setTypeFilter('')">All</button>
+      <button class="type-btn employee" [class.active]="filterType() === 'EMPLOYEE'" (click)="setTypeFilter('EMPLOYEE')">Employee</button>
+      <button class="type-btn manager"  [class.active]="filterType() === 'MANAGER'"  (click)="setTypeFilter('MANAGER')">Manager</button>
+      <button class="type-btn hr"       [class.active]="filterType() === 'HR'"       (click)="setTypeFilter('HR')">HR</button>
+    </div>
   </div>
 
   <!-- Table -->
   <div class="card">
     @if (loading()) {
       <div class="loading"><div class="spinner"></div><p>Loading employees…</p></div>
-    } @else if (!employees().length) {
-      <div class="empty"><span>👥</span><p>No employees found.</p></div>
+    } @else if (!displayedEmployees().length) {
+      <div class="empty"><span>👥</span><p>No {{ filterType() ? filterType().toLowerCase() + 's' : 'employees' }} found.</p></div>
     } @else {
       <div class="table-wrap">
         <table>
@@ -39,7 +57,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (emp of employees(); track emp.employeeId) {
+            @for (emp of displayedEmployees(); track emp.employeeId) {
               <tr>
                 <td class="mono">{{ emp.employeeId }}</td>
                 <td>
@@ -47,7 +65,7 @@
                   <p class="emp-email">{{ emp.email }}</p>
                 </td>
                 <td>{{ emp.designation }}</td>
-                <td class="mono">{{ emp.departmentId || '—' }}</td>
+                <td>{{ deptName(emp.departmentId) }}</td>
                 <td><span class="badge" [class]="typeClass(emp.employeeType)">{{ emp.employeeType }}</span></td>
                 <td><span class="badge" [class]="statusClass(emp.status)">{{ emp.status }}</span></td>
                 <td>
@@ -88,8 +106,17 @@
           </div>
           <div class="field">
             <label>Password <span class="req">*</span></label>
-            <input type="password" formControlName="password" placeholder="Min 8 chars" [class.invalid]="addForm.get('password')?.invalid && addForm.get('password')?.touched" />
-            @if (addForm.get('password')?.touched && addForm.get('password')?.invalid) { <span class="err">Min 8 characters</span> }
+            <input type="password" formControlName="password" placeholder="e.g. Admin@1234" [class.invalid]="addForm.get('password')?.invalid && addForm.get('password')?.touched" />
+            <span class="field-hint">Min 8 characters · at least one uppercase letter, one lowercase letter, and one number</span>
+            @if (addForm.get('password')?.touched) {
+              @if (addForm.get('password')?.hasError('required')) {
+                <span class="err">Password is required</span>
+              } @else if (addForm.get('password')?.hasError('minlength')) {
+                <span class="err">Password must be at least 8 characters</span>
+              } @else if (addForm.get('password')?.hasError('pattern')) {
+                <span class="err">Must include at least one uppercase letter, one lowercase letter, and one number</span>
+              }
+            }
           </div>
           <div class="field">
             <label>Role <span class="req">*</span></label>
@@ -133,12 +160,14 @@
             <input type="text" formControlName="designation" />
           </div>
           <div class="field">
-            <label>Department <span class="req">*</span></label>
-            <select formControlName="departmentId" [class.invalid]="addForm.get('departmentId')?.invalid && addForm.get('departmentId')?.touched">
-              <option value="">Select department</option>
-              @for (d of departments(); track d.departmentId) { <option [value]="d.departmentId">{{ d.name }} ({{ d.departmentId }})</option> }
+            <label>Department @if (addForm.get('role')?.value !== 'HR') { <span class="req">*</span> }</label>
+            <select formControlName="departmentId">
+              <option value="">{{ addForm.get('role')?.value === 'HR' ? 'Unassigned (assign via department)' : 'Select department' }}</option>
+              @for (d of assignableDepts(); track d.departmentId) { <option [value]="d.departmentId">{{ d.name }} ({{ d.departmentId }})</option> }
             </select>
-            @if (addForm.get('departmentId')?.touched && addForm.get('departmentId')?.invalid) { <span class="err">Required</span> }
+            @if (addForm.get('role')?.value === 'HR') {
+              <span class="field-hint">HR employees are assigned to a department when registering the department.</span>
+            }
           </div>
           <div class="field">
             <label>Date of Joining <span class="req">*</span></label>
@@ -199,7 +228,7 @@
           <div class="field span2"><label>Designation <span class="req">*</span></label><input type="text" formControlName="designation" /></div>
           <div class="field"><label>Department <span class="req">*</span></label>
             <select formControlName="departmentId">
-              @for(d of departments();track d.departmentId){<option [value]="d.departmentId">{{d.name}}</option>}
+              @for(d of assignableDepts();track d.departmentId){<option [value]="d.departmentId">{{d.name}}</option>}
             </select>
           </div>
           <div class="field"><label>Date of Joining</label><input type="date" formControlName="dateOfJoining" /></div>

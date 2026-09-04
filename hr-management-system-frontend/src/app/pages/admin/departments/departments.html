@@ -30,24 +30,35 @@
               <th>Department ID</th>
               <th>Name</th>
               <th>Description</th>
-              <th>Manager ID</th>
+              <th>Manager</th>
+              <th>HR</th>
               <th>Created</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             @for (dept of departments(); track dept.departmentId) {
-              <tr>
+              <tr [class.system-row]="dept.isSystem">
                 <td class="mono">{{ dept.departmentId }}</td>
-                <td><strong>{{ dept.name }}</strong></td>
+                <td>
+                  <strong>{{ dept.name }}</strong>
+                  @if (dept.isSystem) { <span class="system-badge">system</span> }
+                </td>
                 <td class="muted">{{ dept.description || '—' }}</td>
-                <td class="mono">{{ dept.managerId || '—' }}</td>
+                <td>{{ managerName(dept.managerId) }}</td>
+                <td>{{ hrName(dept.hrId) }}</td>
                 <td class="muted">{{ dept.createdAt | date:'dd MMM yyyy' }}</td>
                 <td>
-                  <div class="actions">
-                    <button class="act-btn" (click)="openEdit(dept)" title="Edit">✏️</button>
-                    <button class="act-btn danger" (click)="openDelete(dept)" title="Delete">🗑️</button>
-                  </div>
+                  @if (!dept.isSystem) {
+                    <div class="actions">
+                      <button class="act-btn" (click)="openEdit(dept)" title="Edit">✏️</button>
+                      <button class="act-btn danger" (click)="openDelete(dept)" title="Delete">🗑️</button>
+                    </div>
+                  } @else {
+                    <button class="act-btn reassign-btn" (click)="openReassign()" title="Reassign employees to another department">
+                      ↗ Reassign
+                    </button>
+                  }
                 </td>
               </tr>
             }
@@ -84,6 +95,21 @@
           </select>
           <span class="field-hint">Only employees with type MANAGER are listed</span>
         </div>
+        <div class="field">
+          <label>Department HR <span class="req">*</span></label>
+          <select formControlName="hrId" [class.invalid]="deptForm.get('hrId')?.invalid && deptForm.get('hrId')?.touched">
+            <option value="">Select HR employee</option>
+            @for (h of hrEmployees(); track h.employeeId) {
+              <option [value]="h.employeeId">{{ h.name }} ({{ h.employeeId }})</option>
+            }
+          </select>
+          @if (deptForm.get('hrId')?.touched && deptForm.get('hrId')?.invalid) {
+            <span class="err">HR assignment is required</span>
+          }
+          @if (!hrEmployees().length) {
+            <span class="field-hint" style="color:#f59e0b">No HR employees registered yet. Register an HR user first.</span>
+          }
+        </div>
         <div class="modal-footer">
           <button type="button" class="btn-secondary" (click)="closeAdd()">Cancel</button>
           <button type="submit" class="btn-primary" [disabled]="modalLoading()">@if(modalLoading()){<span class="spin"></span>} Create</button>
@@ -117,6 +143,18 @@
             }
           </select>
         </div>
+        <div class="field">
+          <label>Department HR <span class="req">*</span></label>
+          <select formControlName="hrId" [class.invalid]="deptForm.get('hrId')?.invalid && deptForm.get('hrId')?.touched">
+            <option value="">Select HR employee</option>
+            @for (h of hrEmployees(); track h.employeeId) {
+              <option [value]="h.employeeId">{{ h.name }} ({{ h.employeeId }})</option>
+            }
+          </select>
+          @if (deptForm.get('hrId')?.touched && deptForm.get('hrId')?.invalid) {
+            <span class="err">HR assignment is required</span>
+          }
+        </div>
         <div class="modal-footer">
           <button type="button" class="btn-secondary" (click)="closeEdit()">Cancel</button>
           <button type="submit" class="btn-primary" [disabled]="modalLoading()">@if(modalLoading()){<span class="spin"></span>} Save</button>
@@ -126,18 +164,160 @@
   </div>
 }
 
-<!-- ── Delete Confirm ── -->
+<!-- ── Delete / Reassign Modal ── -->
 @if (showDeleteModal()) {
   <div class="overlay" (click)="closeDelete()">
     <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal-header"><h2>Delete Department</h2><button class="close-btn" (click)="closeDelete()">✕</button></div>
-      <div class="modal-body">
-        <p class="modal-desc">Delete <strong>{{ selected()?.name }}</strong>? This cannot be undone.</p>
-        <div class="modal-footer">
-          <button class="btn-secondary" (click)="closeDelete()">Cancel</button>
-          <button class="btn-danger" (click)="confirmDelete()">Delete</button>
+
+      @if (deleteCountLoading()) {
+        <!-- Checking employee count -->
+        <div class="modal-header"><h2>Delete Department</h2><button class="close-btn" (click)="closeDelete()">✕</button></div>
+        <div class="modal-body">
+          <div class="loading"><div class="spinner"></div><p>Checking employees…</p></div>
         </div>
+
+      } @else if (deleteStep() === 'confirm') {
+        <!-- No employees — simple confirm -->
+        <div class="modal-header"><h2>Delete Department</h2><button class="close-btn" (click)="closeDelete()">✕</button></div>
+        @if (modalError()) { <div class="modal-error">⚠ {{ modalError() }}</div> }
+        <div class="modal-body">
+          <p class="modal-desc">Delete <strong>{{ selected()?.name }}</strong>? This cannot be undone.</p>
+          <div class="modal-footer">
+            <button class="btn-secondary" (click)="closeDelete()">Cancel</button>
+            <button class="btn-danger" (click)="confirmDelete()" [disabled]="modalLoading()">
+              @if (modalLoading()) { <span class="spin"></span> } Delete
+            </button>
+          </div>
+        </div>
+
+      } @else {
+        <!-- Has employees — reassignment step -->
+        <div class="modal-header">
+          <h2>Delete &amp; Reassign Employees</h2>
+          <button class="close-btn" (click)="closeDelete()">✕</button>
+        </div>
+        @if (modalError()) { <div class="modal-error">⚠ {{ modalError() }}</div> }
+        <div class="modal-body">
+          <div class="reassign-info">
+            <span class="reassign-icon">👥</span>
+            <p>
+              <strong>{{ selected()?.name }}</strong> has
+              <strong>{{ deleteEmpCount() }}</strong> employee(s).
+              Where should they go before this department is deleted?
+            </p>
+          </div>
+
+          <!-- Option A: Unassigned -->
+          <div class="reassign-option" [class.selected-option]="moveToUnassigned()"
+               (click)="moveToUnassigned.set(true)">
+            <div class="radio-dot" [class.active]="moveToUnassigned()"></div>
+            <div>
+              <strong>Move to Unassigned</strong>
+              <p>Employees go to the holding department and can be reassigned later.</p>
+            </div>
+          </div>
+
+          <!-- Option B: Pick a department -->
+          <div class="reassign-option" [class.selected-option]="!moveToUnassigned()"
+               (click)="moveToUnassigned.set(false)">
+            <div class="radio-dot" [class.active]="!moveToUnassigned()"></div>
+            <div style="flex:1">
+              <strong>Move to another department</strong>
+              @if (!moveToUnassigned()) {
+                <select class="reassign-select" [value]="targetDeptId()"
+                        (change)="targetDeptId.set($any($event.target).value)">
+                  <option value="">— Select department —</option>
+                  @for (d of reassignTargets(); track d.departmentId) {
+                    <option [value]="d.departmentId">{{ d.name }}</option>
+                  }
+                </select>
+              }
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-secondary" (click)="closeDelete()">Cancel</button>
+            <button class="btn-danger" (click)="confirmDelete()" [disabled]="modalLoading()">
+              @if (modalLoading()) { <span class="spin"></span> } Confirm &amp; Delete
+            </button>
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+}
+
+<!-- ── Reassign Unassigned Employees Modal ── -->
+@if (showReassignModal()) {
+  <div class="overlay" (click)="closeReassign()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Unassigned Employees</h2>
+        <button class="close-btn" (click)="closeReassign()">✕</button>
       </div>
+
+      @if (reassignCountLoading()) {
+        <!-- Checking count -->
+        <div class="modal-body">
+          <div class="loading"><div class="spinner"></div><p>Checking employees…</p></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeReassign()">Close</button>
+        </div>
+
+      } @else if (reassignEmpCount() === 0) {
+        <!-- No unassigned employees -->
+        <div class="modal-body">
+          <div class="empty" style="padding:1.5rem 0">
+            <span>✅</span>
+            <p>No employees are currently unassigned. All employees have a department.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeReassign()">Close</button>
+        </div>
+
+      } @else {
+        <!-- Has unassigned employees — show reassign form -->
+        @if (reassignError()) { <div class="modal-error">⚠ {{ reassignError() }}</div> }
+        <div class="modal-body">
+          <div class="reassign-info">
+            <span class="reassign-icon">👥</span>
+            <p>
+              <strong>{{ reassignEmpCount() }} employee(s)</strong> are currently unassigned.
+              Move them all to a department below.
+            </p>
+          </div>
+
+          @if (!nonSystemDepts().length) {
+            <div class="empty" style="padding:1rem 0">
+              <span>🏢</span>
+              <p>No departments exist yet. Create a department first, then reassign.</p>
+            </div>
+          } @else {
+            <div class="field">
+              <label>Move all unassigned employees to</label>
+              <select [value]="reassignTargetId()"
+                      (change)="reassignTargetId.set($any($event.target).value)">
+                <option value="">— Select a department —</option>
+                @for (d of nonSystemDepts(); track d.departmentId) {
+                  <option [value]="d.departmentId">{{ d.name }}</option>
+                }
+              </select>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeReassign()">Cancel</button>
+          @if (nonSystemDepts().length) {
+            <button class="btn-primary" (click)="submitReassign()" [disabled]="reassignLoading()">
+              @if (reassignLoading()) { <span class="spin"></span> } Reassign Employees
+            </button>
+          }
+        </div>
+      }
+
     </div>
   </div>
 }

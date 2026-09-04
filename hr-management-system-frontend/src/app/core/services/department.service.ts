@@ -10,6 +10,16 @@ export class DepartmentService {
   getById(id: string)             { return this.http.get<any>(`${this.base}/${id}`); }
   create(data: any)               { return this.http.post<any>(this.base, data); }
   update(id: string, data: any)   { return this.http.put<any>(`${this.base}/${id}`, data); }
-  delete(id: string)              { return this.http.delete<void>(`${this.base}/${id}`); }
   search(name: string)            { return this.http.get<any[]>(`${this.base}/search?name=${encodeURIComponent(name)}`); }
+
+  getEmployeeCount(id: string)    { return this.http.get<number>(`${this.base}/${id}/employee-count`); }
+  reassignAll(fromId: string, toId: string) {
+    return this.http.put<void>(`${this.base}/${fromId}/reassign-employees?targetDepartmentId=${encodeURIComponent(toId)}`, {});
+  }
+
+  delete(id: string, targetDepartmentId?: string) {
+    const params: any = {};
+    if (targetDepartmentId) params['targetDepartmentId'] = targetDepartmentId;
+    return this.http.delete<void>(`${this.base}/${id}`, { params });
+  }
 }

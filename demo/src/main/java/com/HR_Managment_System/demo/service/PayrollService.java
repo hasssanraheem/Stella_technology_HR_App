@@ -48,6 +48,14 @@ public class PayrollService {
             records = payrollRepository.findByMonthAndYearAndPaymentStatus(month, year, status);
         } else if (month != null && year != null) {
             records = payrollRepository.findByMonthAndYear(month, year);
+        } else if (month != null && status != null) {
+            records = payrollRepository.findByMonthAndPaymentStatus(month, status);
+        } else if (year != null && status != null) {
+            records = payrollRepository.findByYearAndPaymentStatus(year, status);
+        } else if (year != null) {
+            records = payrollRepository.findByYear(year);
+        } else if (month != null) {
+            records = payrollRepository.findByMonth(month);
         } else if (status != null) {
             records = payrollRepository.findByPaymentStatus(status);
         } else {
@@ -71,6 +79,18 @@ public class PayrollService {
         payroll.setUpdatedAt(LocalDateTime.now());
         Payroll updated = payrollRepository.save(payroll);
         return payrollMapper.toResponse(updated);
+    }
+
+
+    public List<PayrollResponse> getPayrollByDepartment(String departmentId, Integer month, Integer year, PaymentStatus status) {
+        List<String> empIds = employeeRepository.findByDepartmentId(departmentId)
+                .stream().map(emp -> emp.getEmployeeId()).toList();
+        return payrollRepository.findByEmployeeIdIn(empIds).stream()
+                .filter(p -> month == null || p.getMonth() == month)
+                .filter(p -> year == null || p.getYear() == year)
+                .filter(p -> status == null || p.getPaymentStatus() == status)
+                .map(payrollMapper::toResponse)
+                .toList();
     }
 
     private String generatePayrollId() {

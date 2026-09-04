@@ -61,14 +61,15 @@ public class EmployeeService {
     }
 
     public Page<EmployeeResponse> getAllEmployees(String name, String departmentId,
-                                                   EmployeeStatus status, int page, int size) {
+                                                   EmployeeStatus status, String userRole, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         String nameFilter = (name != null) ? name : "";
         String deptFilter = (departmentId != null) ? departmentId : "";
+        String roleFilter = (userRole != null) ? userRole : "";
 
         return employeeRepository
-                .findByFilters(nameFilter, deptFilter, status, pageable)
+                .findByFilters(nameFilter, deptFilter, status, roleFilter, pageable)
                 .map(employeeMapper::toResponse);
     }
 

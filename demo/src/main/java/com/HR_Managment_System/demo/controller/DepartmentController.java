@@ -62,10 +62,27 @@ public class DepartmentController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/{departmentId}/reassign-employees")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> reassignAllEmployees(
+            @PathVariable String departmentId,
+            @RequestParam String targetDepartmentId) {
+        departmentService.reassignAllEmployees(departmentId, targetDepartmentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{departmentId}/employee-count")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Long> getEmployeeCount(@PathVariable String departmentId) {
+        return ResponseEntity.ok(departmentService.getEmployeeCount(departmentId));
+    }
+
     @DeleteMapping("/{departmentId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> deleteDepartment(@PathVariable String departmentId) {
-        departmentService.deleteDepartment(departmentId);
-        return ResponseEntity.ok("Department deleted successfully");
+    public ResponseEntity<Void> deleteDepartment(
+            @PathVariable String departmentId,
+            @RequestParam(required = false) String targetDepartmentId) {
+        departmentService.deleteDepartment(departmentId, targetDepartmentId);
+        return ResponseEntity.noContent().build();
     }
 }
