@@ -51,7 +51,7 @@ public class EmployeeController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EmployeeResponse> addEmployee(@Valid @RequestBody EmployeeRequest request) {
         EmployeeResponse response = employeeService.addEmployee(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -86,19 +86,10 @@ public class EmployeeController {
     }
 
     @PutMapping("/{employeeId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EmployeeResponse> updateEmployee(
             @PathVariable String employeeId,
-            @RequestBody EmployeeUpdateRequest request,
-            Authentication authentication) {
-        boolean isHR = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
-        if (isHR) {
-            String hrDeptId = employeeService.getEmployeeByEmail(authentication.getName()).getDepartmentId();
-            if (!hrDeptId.equals(employeeService.getEmployeeById(employeeId).getDepartmentId())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
-        }
+            @RequestBody EmployeeUpdateRequest request) {
         EmployeeResponse response = employeeService.updateEmployee(employeeId, request);
         return ResponseEntity.ok(response);
     }

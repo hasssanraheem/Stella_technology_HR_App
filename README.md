@@ -11,11 +11,14 @@ This is what you see when you open the repo on GitHub:
 ```
 Stella_technology_HR_App/
 │
-├── backend/                    Spring Boot REST API (Java 21, Maven)
+├── backend/                         Spring Boot REST API (Java 21, Maven)
 ├── hr-management-system-frontend/   Angular 22 frontend
-├── submission/                 Project documentation (OpenAPI, Postman, DBML schema)
-├── docker-compose.yml          One command to run everything — backend, frontend, MongoDB
-└── README.md                   You are here
+├── submission/                       Project documentation (OpenAPI, Postman, DBML schema)
+├── HR_PROJECT_DB_SCHEMA.pdf          MongoDB collections schema — visual field-by-field reference
+├── openapi.yaml                      OpenAPI 3.0.3 spec — import into Swagger Editor or Postman
+├── postman_collection.json           Role-based Postman collection (Auth / Admin / HR / Employee)
+├── docker-compose.yml               One command to run everything — backend, frontend, MongoDB
+└── README.md                        You are here
 ```
 
 > **Note:** A `.env` file is required locally to run the app (see below). It is not in the repo because it contains your secret key — see [.gitignore](.gitignore).
@@ -103,8 +106,11 @@ All three servers (MongoDB, backend, frontend) start together. Open **http://loc
 8. [API Reference](#api-reference)
 9. [Roles & Permissions](#roles--permissions)
 10. [Database Collections](#database-collections)
-11. [Submission Files](#submission-files)
-12. [Default Admin Account](#default-admin-account)
+11. [MongoDB Schema PDF](#mongodb-schema-pdf)
+12. [API Testing with Postman](#api-testing-with-postman)
+13. [Running Tests](#running-tests)
+14. [Submission Files](#submission-files)
+15. [Default Admin Account](#default-admin-account)
 
 ---
 
@@ -138,8 +144,12 @@ Stella_Technology_Final_Project/
 │   │   ├── security/              ← JwtAuthFilter, CustomUserDetailsService
 │   │   ├── service/               ← Business logic layer
 │   │   └── util/                  ← JwtUtil
-│   └── src/main/resources/
-│       └── application.yml        ← App config (reads secrets from env vars)
+│   ├── src/main/resources/
+│   │   └── application.yml        ← App config (reads secrets from env vars)
+│   └── src/test/java/com/HR_Managnet_System/demo/service/
+│       ├── EmployeeServiceTest.java   ← 8 unit tests
+│       ├── LeaveServiceTest.java      ← 8 unit tests
+│       └── PayrollServiceTest.java    ← 7 unit tests
 │
 ├── hr-management-system-frontend/ ← Angular 22 frontend
 │   └── src/app/
@@ -169,7 +179,9 @@ Stella_Technology_Final_Project/
 │   ├── mongodb_schema.md          ← MongoDB collections reference
 │   └── pdf_html/                  ← Source HTML for documentation PDFs
 │
-├── .env.example                   ← Copy to backend/.env before running
+├── HR_PROJECT_DB_SCHEMA.pdf       ← Visual MongoDB schema — all 7 collections with field types
+├── openapi.yaml                   ← OpenAPI 3.0.3 spec (same as submission/, root copy for easy access)
+├── postman_collection.json        ← Postman collection (same as submission/, root copy for easy access)
 ├── .gitignore
 └── README.md
 ```
@@ -501,6 +513,132 @@ Authorization: Bearer <jwt_token>
 | `employee_history` | Audit trail — PROMOTION, DESIGNATION_CHANGE, PERFORMANCE_NOTE records |
 
 See `submission/schema.dbml` for the full relational schema (import at [dbdiagram.io](https://dbdiagram.io)).
+
+---
+
+## MongoDB Schema PDF
+
+`HR_PROJECT_DB_SCHEMA.pdf` (root of the repo) is a visual reference for all seven MongoDB collections used in this project.
+
+It covers every collection — `users`, `employees`, `departments`, `leave_requests`, `leave_balances`, `payroll`, and `employee_history` — showing each field name, its data type, and whether it is required or optional. It also shows which fields reference documents in other collections (the equivalent of foreign keys in a relational database).
+
+Open it directly from the repo root. No tools required — it is a standard PDF.
+
+---
+
+## API Testing with Postman
+
+Two files at the root of the repo make it easy to explore and test the API:
+
+### `openapi.yaml`
+
+An OpenAPI 3.0.3 specification that describes every endpoint, its parameters, request body schema, and response codes.
+
+**How to use:**
+
+Option A — Swagger Editor (no install):
+1. Go to [editor.swagger.io](https://editor.swagger.io)
+2. Click **File → Import file** and choose `openapi.yaml`
+3. The editor renders interactive docs on the right — try requests directly from there
+
+Option B — Import into Postman:
+1. Open Postman → **Import** → drag in `openapi.yaml`
+2. Postman generates a collection from the spec automatically
+
+### `postman_collection.json`
+
+A ready-to-use Postman collection organised into four role-based folders:
+
+| Folder | What it contains |
+|---|---|
+| **Auth** | Login, register, get current user |
+| **Admin** | Employee CRUD, department management, leave approvals, payroll view |
+| **HR** | Leave approvals, payroll generation, leave balance lookup |
+| **Employee** | Apply for leave, view history, view payroll |
+
+**How to import and use:**
+
+1. Open Postman
+2. Click **Import** (top-left) → drag in `postman_collection.json`
+3. Log in first using the **Auth → Login** request — copy the `token` from the response
+4. Set the token as a Postman variable (`{{token}}`) or paste it directly into the Authorization header of each request
+5. Run requests in order: Login → then Admin, HR, or Employee requests depending on the role
+
+**Default credentials to start with:**
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@hrms.com` | `Admin@1234` |
+
+---
+
+## Running Tests
+
+The backend has **23 unit tests** covering the three core service layers: Employee, Leave, and Payroll. All tests use JUnit 5 and Mockito — no database or running server required.
+
+### Run the tests
+
+```bash
+cd backend
+mvn test
+```
+
+Expected output:
+
+```
+Tests run: 8,  Failures: 0, Errors: 0  -- EmployeeServiceTest
+Tests run: 8,  Failures: 0, Errors: 0  -- LeaveServiceTest
+Tests run: 7,  Failures: 0, Errors: 0  -- PayrollServiceTest
+
+Tests run: 23, Failures: 0, Errors: 0
+BUILD SUCCESS
+```
+
+### View results as an HTML report
+
+```bash
+mvn surefire-report:report
+open target/reports/surefire.html   # macOS
+# Windows: start target\reports\surefire.html
+```
+
+The HTML report lists every test method, its pass/fail status, and how long it took. The `target/` folder is in `.gitignore` so anyone who clones the repo generates their own fresh report.
+
+### Where the test files live
+
+```
+backend/src/test/java/com/HR_Managnet_System/demo/service/
+├── EmployeeServiceTest.java    ← 8 tests: add, get, update, delete employee
+├── LeaveServiceTest.java       ← 8 tests: apply leave, approve, balance checks
+└── PayrollServiceTest.java     ← 7 tests: generate payroll, update payment status
+```
+
+### How to add a new test
+
+1. Create a new file in `backend/src/test/java/com/HR_Managnet_System/demo/service/` (or a `controller/` sub-folder)
+2. Annotate the class with `@ExtendWith(MockitoExtension.class)`
+3. Mock dependencies with `@Mock`, inject with `@InjectMocks`:
+
+```java
+@ExtendWith(MockitoExtension.class)
+class MyServiceTest {
+
+    @Mock
+    MyRepository myRepository;
+
+    @InjectMocks
+    MyService myService;
+
+    @Test
+    void myMethod_happyPath() {
+        when(myRepository.findById("ID-001")).thenReturn(Optional.of(new MyEntity()));
+        MyResponse result = myService.myMethod("ID-001");
+        assertNotNull(result);
+    }
+}
+```
+
+4. Run `mvn test` — the new test is picked up automatically. Regenerate the HTML report with `mvn surefire-report:report`.
 
 ---
 
