@@ -16,6 +16,8 @@ export class LeavesComponent implements OnInit {
   private empSvc   = inject(EmployeeService);
   private deptSvc  = inject(DepartmentService);
 
+  activeTab        = signal<'employee' | 'hr-approvals'>('employee');
+
   private allLeaves  = signal<any[]>([]);
   employees          = signal<any[]>([]);
   departments        = signal<any[]>([]);
@@ -28,25 +30,41 @@ export class LeavesComponent implements OnInit {
   balanceLoading     = signal(false);
   actionLoading      = signal<string>('');
 
+  // Employee leaves (non-HR employees)
   leaves = computed(() => {
+    const hrIds = new Set(
+      this.employees().filter((e: any) => e.userRole === 'HR').map((e: any) => e.employeeId)
+    );
     const q = this.leaveSearch().trim().toLowerCase();
-    if (!q) return this.allLeaves();
-    const emps = this.employees();
-    return this.allLeaves().filter(l => {
-      const emp = emps.find((e: any) => e.employeeId === l.employeeId);
+    const dept = this.filterDept();
+    let list = this.allLeaves().filter(l => !hrIds.has(l.employeeId));
+    if (dept) {
+      const empIds = new Set(
+        this.employees().filter((e: any) => e.departmentId === dept).map((e: any) => e.employeeId)
+      );
+      list = list.filter(l => empIds.has(l.employeeId));
+    }
+    if (!q) return list;
+    return list.filter(l => {
+      const emp = this.employees().find((e: any) => e.employeeId === l.employeeId);
       const name = emp ? emp.name.toLowerCase() : '';
       return name.includes(q) || l.employeeId.toLowerCase().includes(q);
     });
   });
 
-  displayedLeaves = computed(() => {
-    const dept = this.filterDept();
-    const base = this.leaves();
-    if (!dept) return base;
-    const empIds = new Set(
-      this.employees().filter((e: any) => e.departmentId === dept).map((e: any) => e.employeeId)
+  // HR employee leaves (for admin to approve)
+  hrLeaves = computed(() => {
+    const hrIds = new Set(
+      this.employees().filter((e: any) => e.userRole === 'HR').map((e: any) => e.employeeId)
     );
-    return base.filter(l => empIds.has(l.employeeId));
+    const q = this.leaveSearch().trim().toLowerCase();
+    let list = this.allLeaves().filter(l => hrIds.has(l.employeeId));
+    if (!q) return list;
+    return list.filter(l => {
+      const emp = this.employees().find((e: any) => e.employeeId === l.employeeId);
+      const name = emp ? emp.name.toLowerCase() : '';
+      return name.includes(q) || l.employeeId.toLowerCase().includes(q);
+    });
   });
 
   filteredBalances = computed(() => {
@@ -84,6 +102,22 @@ export class LeavesComponent implements OnInit {
   }
 
   setFilter(f: string) { this.activeFilter.set(f); this.loadLeaves(); }
+
+  approve(leave: any) {
+    this.actionLoading.set(leave.leaveId);
+    this.leaveSvc.updateLeaveStatus(leave.leaveId, 'APPROVED').subscribe({
+      next: () => { this.actionLoading.set(''); this.loadLeaves(); },
+      error: () => this.actionLoading.set('')
+    });
+  }
+
+  reject(leave: any) {
+    this.actionLoading.set(leave.leaveId + '_r');
+    this.leaveSvc.updateLeaveStatus(leave.leaveId, 'REJECTED').subscribe({
+      next: () => { this.actionLoading.set(''); this.loadLeaves(); },
+      error: () => this.actionLoading.set('')
+    });
+  }
 
   loadAllBalances() {
     this.balanceLoading.set(true);

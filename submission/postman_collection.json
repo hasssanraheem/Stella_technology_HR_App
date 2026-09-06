@@ -1,0 +1,465 @@
+{
+  "info": {
+    "name": "HR Management System",
+    "_postman_id": "hrms-role-based-v2",
+    "description": "Role-based: Auth → Admin → HR → Employee. Set jwt_token after login. All requests inherit Bearer Token from collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{jwt_token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "base_url",      "value": "http://localhost:8080" },
+    { "key": "jwt_token",     "value": "" },
+    { "key": "employee_id",   "value": "" },
+    { "key": "department_id", "value": "" },
+    { "key": "leave_id",      "value": "" },
+    { "key": "payroll_id",    "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1 — Auth",
+      "item": [
+        {
+          "name": "Login as Admin",
+          "request": { "auth": { "type": "noauth" }, "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api","auth","login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@hrms.com\",\n  \"password\": \"Admin@1234\"\n}", "options": { "raw": { "language": "json" } } },
+            "description": "Returns JWT. Copy token → paste into collection variable jwt_token."
+          }
+        },
+        {
+          "name": "Login as HR",
+          "request": { "auth": { "type": "noauth" }, "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api","auth","login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"hr@company.com\",\n  \"password\": \"YourPassword\"\n}", "options": { "raw": { "language": "json" } } },
+            "description": "Replace email/password with actual HR account credentials."
+          }
+        },
+        {
+          "name": "Login as Employee",
+          "request": { "auth": { "type": "noauth" }, "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api","auth","login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"employee@company.com\",\n  \"password\": \"YourPassword\"\n}", "options": { "raw": { "language": "json" } } },
+            "description": "Replace email/password with actual employee credentials."
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": { "method": "GET",
+            "url": { "raw": "{{base_url}}/api/auth/me", "host": ["{{base_url}}"], "path": ["api","auth","me"] },
+            "description": "Returns email and role of the currently logged-in user. Works for all roles."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 — Admin",
+      "item": [
+        {
+          "name": "Employees",
+          "item": [
+            {
+              "name": "Register Employee",
+              "request": { "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/employees", "host": ["{{base_url}}"], "path": ["api","employees"] },
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Jane Smith\",\n  \"email\": \"jane.smith@company.com\",\n  \"password\": \"Pass@1234\",\n  \"phone\": \"+92-301-0000001\",\n  \"gender\": \"FEMALE\",\n  \"dateOfBirth\": \"1998-03-12\",\n  \"address\": \"456 Park Avenue, Lahore\",\n  \"departmentId\": \"{{department_id}}\",\n  \"designation\": \"Software Engineer\",\n  \"dateOfJoining\": \"2026-09-01\",\n  \"salary\": 70000,\n  \"allowances\": 5000,\n  \"deductions\": 3000,\n  \"employeeType\": \"EMPLOYEE\",\n  \"userRole\": \"EMPLOYEE\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "Requires ADMIN. employeeType/userRole: EMPLOYEE, MANAGER, HR. Leave departmentId blank for HR staff."
+              }
+            },
+            {
+              "name": "Get All Employees",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/employees?page=0&size=20", "host": ["{{base_url}}"], "path": ["api","employees"],
+                  "query": [
+                    { "key": "page", "value": "0" }, { "key": "size", "value": "20" },
+                    { "key": "name", "value": "", "disabled": true },
+                    { "key": "status", "value": "ACTIVE", "disabled": true },
+                    { "key": "userRole", "value": "EMPLOYEE", "disabled": true },
+                    { "key": "departmentId", "value": "", "disabled": true }
+                  ]
+                },
+                "description": "Paginated list. Optional filters: name, status (ACTIVE/INACTIVE), userRole (EMPLOYEE/HR/ADMIN), departmentId."
+              }
+            },
+            {
+              "name": "Get Employee by ID",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}"] },
+                "description": "Returns single employee. Set employee_id variable."
+              }
+            },
+            {
+              "name": "Update Employee",
+              "request": { "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}"] },
+                "body": { "mode": "raw", "raw": "{\n  \"designation\": \"Senior Software Engineer\",\n  \"salary\": 85000\n}", "options": { "raw": { "language": "json" } } },
+                "description": "All fields optional — only send the fields to change. Requires ADMIN."
+              }
+            },
+            {
+              "name": "Change Employee Type",
+              "request": { "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}/type", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}","type"] },
+                "body": { "mode": "raw", "raw": "{\n  \"employeeType\": \"MANAGER\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "Changes type (EMPLOYEE / MANAGER / HR). Auto-creates a history record. Requires ADMIN."
+              }
+            },
+            {
+              "name": "Add Performance Note",
+              "request": { "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}/performance-notes", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}","performance-notes"] },
+                "body": { "mode": "raw", "raw": "{\n  \"note\": \"Excellent performance in Q3 2026\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "Adds a free-text note to the employee history. Requires ADMIN."
+              }
+            },
+            {
+              "name": "Get Employee History",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}/history", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}","history"],
+                  "query": [{ "key": "type", "value": "PROMOTION", "disabled": true }]
+                },
+                "description": "Returns promotion, designation change, and note history. Optional ?type filter. Accessible by ADMIN, HR, and the employee themselves."
+              }
+            },
+            {
+              "name": "Delete Employee",
+              "request": { "method": "DELETE",
+                "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}"] },
+                "description": "Deletes employee, their user account, leave balance, and leaves. Requires ADMIN."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Departments",
+          "item": [
+            {
+              "name": "Create Department",
+              "request": { "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/departments", "host": ["{{base_url}}"], "path": ["api","departments"] },
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Engineering\",\n  \"description\": \"Software development team\",\n  \"hrId\": \"{{employee_id}}\",\n  \"managerId\": \"\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "hrId must be an employee with userRole HR. One HR per dept — 400 if already assigned. managerId optional."
+              }
+            },
+            {
+              "name": "Get All Departments",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/departments", "host": ["{{base_url}}"], "path": ["api","departments"],
+                  "query": [{ "key": "name", "value": "Engineering", "disabled": true }]
+                },
+                "description": "Returns all departments. Optional ?name filter for search. Accessible by ADMIN and HR."
+              }
+            },
+            {
+              "name": "Get Department by ID",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/departments/{{department_id}}", "host": ["{{base_url}}"], "path": ["api","departments","{{department_id}}"] },
+                "description": "Returns a single department. Accessible by ADMIN and HR."
+              }
+            },
+            {
+              "name": "Get Department Employee Count",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/departments/{{department_id}}/employee-count", "host": ["{{base_url}}"], "path": ["api","departments","{{department_id}}","employee-count"] },
+                "description": "Returns total employee count in the department."
+              }
+            },
+            {
+              "name": "Update Department",
+              "request": { "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/departments/{{department_id}}", "host": ["{{base_url}}"], "path": ["api","departments","{{department_id}}"] },
+                "body": { "mode": "raw", "raw": "{\n  \"description\": \"Updated description\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "All fields optional: name, description, hrId, managerId. Requires ADMIN."
+              }
+            },
+            {
+              "name": "Reassign Employees to Another Department",
+              "request": { "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/departments/{{department_id}}/reassign-employees", "host": ["{{base_url}}"], "path": ["api","departments","{{department_id}}","reassign-employees"] },
+                "body": { "mode": "raw", "raw": "{\n  \"targetDepartmentId\": \"DEPT-0001\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "Moves all employees from this dept to targetDepartmentId. Do this before deletion. Requires ADMIN."
+              }
+            },
+            {
+              "name": "Delete Department",
+              "request": { "method": "DELETE",
+                "url": { "raw": "{{base_url}}/api/departments/{{department_id}}", "host": ["{{base_url}}"], "path": ["api","departments","{{department_id}}"] },
+                "description": "Deletes a department. Reassign employees first. Requires ADMIN."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leave Management",
+          "item": [
+            {
+              "name": "Get All Leaves (Org-Wide)",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/leaves", "host": ["{{base_url}}"], "path": ["api","leaves"],
+                  "query": [{ "key": "status", "value": "PENDING", "disabled": true }]
+                },
+                "description": "Returns all leave requests org-wide including HR employees. Optional ?status: PENDING, APPROVED, REJECTED. Requires ADMIN."
+              }
+            },
+            {
+              "name": "Get All Leave Balances",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/leaves/balance", "host": ["{{base_url}}"], "path": ["api","leaves","balance"],
+                  "query": [{ "key": "name", "value": "John", "disabled": true }]
+                },
+                "description": "Leave balances for all employees. Optional ?name filter. Requires ADMIN."
+              }
+            },
+            {
+              "name": "Approve HR Leave",
+              "request": { "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/leaves/{{leave_id}}/status", "host": ["{{base_url}}"], "path": ["api","leaves","{{leave_id}}","status"] },
+                "body": { "mode": "raw", "raw": "{\n  \"status\": \"APPROVED\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "Approve a leave from an HR employee. Only Admin can do this — HR cannot approve their own type."
+              }
+            },
+            {
+              "name": "Reject HR Leave",
+              "request": { "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/leaves/{{leave_id}}/status", "host": ["{{base_url}}"], "path": ["api","leaves","{{leave_id}}","status"] },
+                "body": { "mode": "raw", "raw": "{\n  \"status\": \"REJECTED\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "Reject a leave from an HR employee. Requires ADMIN."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payroll",
+          "item": [
+            {
+              "name": "Get All Payroll (Org-Wide)",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/payroll", "host": ["{{base_url}}"], "path": ["api","payroll"],
+                  "query": [
+                    { "key": "month", "value": "9", "disabled": true },
+                    { "key": "year", "value": "2026", "disabled": true },
+                    { "key": "status", "value": "PAID", "disabled": true }
+                  ]
+                },
+                "description": "All payroll records org-wide. Optional filters: month, year, status (PAID/UNPAID). Requires ADMIN."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 — HR",
+      "item": [
+        {
+          "name": "Employees",
+          "item": [
+            {
+              "name": "Get Department Employees",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/employees?page=0&size=50", "host": ["{{base_url}}"], "path": ["api","employees"],
+                  "query": [
+                    { "key": "page", "value": "0" }, { "key": "size", "value": "50" },
+                    { "key": "name", "value": "", "disabled": true }
+                  ]
+                },
+                "description": "Returns only employees in HR's own department — auto-scoped by backend from JWT. No departmentId param needed."
+              }
+            },
+            {
+              "name": "Get Employee by ID",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}"] },
+                "description": "Returns a single employee profile."
+              }
+            },
+            {
+              "name": "Get Employee History",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}/history", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}","history"] },
+                "description": "Promotion and designation history for an employee."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leave Approvals (Employee Leaves)",
+          "item": [
+            {
+              "name": "Get Department Leaves",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/leaves", "host": ["{{base_url}}"], "path": ["api","leaves"],
+                  "query": [{ "key": "status", "value": "PENDING", "disabled": true }]
+                },
+                "description": "Dept leaves auto-scoped by JWT. HR employees' leaves are excluded here — those go to Admin's HR Leave Approvals tab."
+              }
+            },
+            {
+              "name": "Get Department Leave Balances",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/leaves/balance", "host": ["{{base_url}}"], "path": ["api","leaves","balance"] },
+                "description": "Leave balances for employees in HR's department (auto-scoped)."
+              }
+            },
+            {
+              "name": "Approve Employee Leave",
+              "request": { "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/leaves/{{leave_id}}/status", "host": ["{{base_url}}"], "path": ["api","leaves","{{leave_id}}","status"] },
+                "body": { "mode": "raw", "raw": "{\n  \"status\": \"APPROVED\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "Approve a PENDING leave from a non-HR employee. Returns 403 if the leave belongs to an HR employee."
+              }
+            },
+            {
+              "name": "Reject Employee Leave",
+              "request": { "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/leaves/{{leave_id}}/status", "host": ["{{base_url}}"], "path": ["api","leaves","{{leave_id}}","status"] },
+                "body": { "mode": "raw", "raw": "{\n  \"status\": \"REJECTED\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "Reject a PENDING leave from a non-HR employee in the department."
+              }
+            }
+          ]
+        },
+        {
+          "name": "My Leave",
+          "item": [
+            {
+              "name": "Apply for Leave",
+              "request": { "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/leaves", "host": ["{{base_url}}"], "path": ["api","leaves"] },
+                "body": { "mode": "raw", "raw": "{\n  \"leaveType\": \"ANNUAL\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-05\",\n  \"reason\": \"Family vacation\"\n}", "options": { "raw": { "language": "json" } } },
+                "description": "HR submits their own leave. employeeId derived from JWT. Goes to Admin for approval. leaveType: ANNUAL, CASUAL, SICK, UNPAID."
+              }
+            },
+            {
+              "name": "Get My Leave History",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}/leaves", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}","leaves"] },
+                "description": "HR's own leave history. Set employee_id to your own ID."
+              }
+            },
+            {
+              "name": "Get My Leave Balance",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/leaves/balance/{{employee_id}}", "host": ["{{base_url}}"], "path": ["api","leaves","balance","{{employee_id}}"] },
+                "description": "Remaining leave balances for HR. Set employee_id to your own ID."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payroll",
+          "item": [
+            {
+              "name": "Generate Payroll",
+              "request": { "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/api/payroll/generate", "host": ["{{base_url}}"], "path": ["api","payroll","generate"] },
+                "body": { "mode": "raw", "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"month\": 9,\n  \"year\": 2026\n}", "options": { "raw": { "language": "json" } } },
+                "description": "Generate monthly payroll. Employee must be in HR's department. 400 if record already exists for that month/year."
+              }
+            },
+            {
+              "name": "Get Department Payroll",
+              "request": { "method": "GET",
+                "url": { "raw": "{{base_url}}/api/payroll", "host": ["{{base_url}}"], "path": ["api","payroll"],
+                  "query": [
+                    { "key": "month", "value": "9", "disabled": true },
+                    { "key": "year", "value": "2026", "disabled": true },
+                    { "key": "status", "value": "UNPAID", "disabled": true }
+                  ]
+                },
+                "description": "Payroll for HR's department (auto-scoped). Optional filters: month, year, status (PAID/UNPAID)."
+              }
+            },
+            {
+              "name": "Mark Payroll as PAID",
+              "request": { "method": "PATCH",
+                "url": { "raw": "{{base_url}}/api/payroll/{{payroll_id}}/status?status=PAID", "host": ["{{base_url}}"], "path": ["api","payroll","{{payroll_id}}","status"],
+                  "query": [{ "key": "status", "value": "PAID" }]
+                },
+                "description": "Marks payroll as PAID. Status is a query param, no request body. Requires HR."
+              }
+            },
+            {
+              "name": "Mark Payroll as UNPAID",
+              "request": { "method": "PATCH",
+                "url": { "raw": "{{base_url}}/api/payroll/{{payroll_id}}/status?status=UNPAID", "host": ["{{base_url}}"], "path": ["api","payroll","{{payroll_id}}","status"],
+                  "query": [{ "key": "status", "value": "UNPAID" }]
+                },
+                "description": "Marks payroll as UNPAID. Requires HR."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 — Employee",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": { "method": "GET",
+            "url": { "raw": "{{base_url}}/api/employees/me", "host": ["{{base_url}}"], "path": ["api","employees","me"] },
+            "description": "Own profile. Works for all roles."
+          }
+        },
+        {
+          "name": "Apply for Leave",
+          "request": { "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/leaves", "host": ["{{base_url}}"], "path": ["api","leaves"] },
+            "body": { "mode": "raw", "raw": "{\n  \"leaveType\": \"CASUAL\",\n  \"startDate\": \"2026-10-10\",\n  \"endDate\": \"2026-10-11\",\n  \"reason\": \"Personal errand\"\n}", "options": { "raw": { "language": "json" } } },
+            "description": "Submit a leave request. employeeId auto-derived from JWT. leaveType: ANNUAL, CASUAL, SICK, UNPAID."
+          }
+        },
+        {
+          "name": "Get My Leaves",
+          "request": { "method": "GET",
+            "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}/leaves", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}","leaves"] },
+            "description": "Own leave history. Set employee_id to your own ID."
+          }
+        },
+        {
+          "name": "Get My Leave Balance",
+          "request": { "method": "GET",
+            "url": { "raw": "{{base_url}}/api/leaves/balance/{{employee_id}}", "host": ["{{base_url}}"], "path": ["api","leaves","balance","{{employee_id}}"] },
+            "description": "Remaining leave balances. Set employee_id to your own ID."
+          }
+        },
+        {
+          "name": "Get My Payroll",
+          "request": { "method": "GET",
+            "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}/payroll", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}","payroll"] },
+            "description": "Own payroll history with net salary breakdown. Set employee_id to your own ID."
+          }
+        },
+        {
+          "name": "Get My History",
+          "request": { "method": "GET",
+            "url": { "raw": "{{base_url}}/api/employees/{{employee_id}}/history", "host": ["{{base_url}}"], "path": ["api","employees","{{employee_id}}","history"],
+              "query": [{ "key": "type", "value": "PROMOTION", "disabled": true }]
+            },
+            "description": "Own promotion, designation change, and note history. Optional ?type filter."
+          }
+        }
+      ]
+    }
+  ]
+}

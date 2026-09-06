@@ -6,82 +6,181 @@
     </div>
   </div>
 
-  <!-- Search & Department Filter -->
-  <div class="toolbar">
-    <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="text" placeholder="Search by employee name…"
-             [value]="leaveSearch()"
-             (input)="leaveSearch.set($any($event.target).value)" />
-      @if (leaveSearch()) {
-        <button class="clear-btn" (click)="leaveSearch.set('')">✕</button>
+  <!-- Top-level tabs -->
+  <div class="top-tabs">
+    <button class="top-tab" [class.active]="activeTab() === 'employee'" (click)="activeTab.set('employee')">
+      Employee Leaves
+    </button>
+    <button class="top-tab hr-tab" [class.active]="activeTab() === 'hr-approvals'" (click)="activeTab.set('hr-approvals')">
+      HR Leave Approvals
+      @if (hrLeaves().length) {
+        <span class="tab-badge">{{ hrLeaves().length }}</span>
+      }
+    </button>
+  </div>
+
+  <!-- ======= EMPLOYEE LEAVES TAB ======= -->
+  @if (activeTab() === 'employee') {
+    <!-- Search & Department Filter -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search by employee name…"
+               [value]="leaveSearch()"
+               (input)="leaveSearch.set($any($event.target).value)" />
+        @if (leaveSearch()) {
+          <button class="clear-btn" (click)="leaveSearch.set('')">✕</button>
+        }
+      </div>
+      <select class="dept-filter" [value]="filterDept()" (change)="filterDept.set($any($event.target).value)">
+        <option value="">All Departments</option>
+        @for (d of departments(); track d.departmentId) {
+          @if (!d.isSystem) { <option [value]="d.departmentId">{{ d.name }}</option> }
+        }
+      </select>
+    </div>
+
+    <!-- Status Filter Tabs -->
+    <div class="filter-tabs">
+      <button class="filter-tab"          [class.active]="activeFilter() === ''"         (click)="setFilter('')">All</button>
+      <button class="filter-tab pending"  [class.active]="activeFilter() === 'PENDING'"  (click)="setFilter('PENDING')">Pending</button>
+      <button class="filter-tab approved" [class.active]="activeFilter() === 'APPROVED'" (click)="setFilter('APPROVED')">Approved</button>
+      <button class="filter-tab rejected" [class.active]="activeFilter() === 'REJECTED'" (click)="setFilter('REJECTED')">Rejected</button>
+    </div>
+
+    <!-- Leave Cards -->
+    <div class="leaves-grid">
+      @if (loading()) {
+        <div class="loading"><div class="spinner"></div><p>Loading…</p></div>
+      } @else if (!leaves().length) {
+        <div class="empty">
+          <span>📭</span>
+          <p>{{ leaveSearch() ? 'No results for "' + leaveSearch() + '"' : 'No leave requests found.' }}</p>
+        </div>
+      } @else {
+        @for (leave of leaves(); track leave.leaveId) {
+          <div class="leave-card" [class.pending-card]="leave.status === 'PENDING'">
+            <div class="leave-top">
+              <div>
+                <span class="leave-type">{{ leave.leaveType }}</span>
+                <span class="leave-id">{{ leave.leaveId }}</span>
+              </div>
+              <span class="badge" [class]="statusClass(leave.status)">{{ leave.status }}</span>
+            </div>
+
+            <div class="leave-emp">
+              👤 <strong>{{ empName(leave.employeeId) }}</strong>
+              <span class="leave-emp-id">{{ leave.employeeId }}</span>
+            </div>
+            <div class="leave-meta">
+              <span>🏢 {{ deptNameForLeave(leave.employeeId) }}</span>
+              <span>👩‍💼 HR: {{ hrNameForLeave(leave.employeeId) }}</span>
+            </div>
+
+            <div class="leave-dates">
+              <span>📅 {{ leave.startDate | date:'dd MMM yyyy' }}</span>
+              <span>→</span>
+              <span>{{ leave.endDate | date:'dd MMM yyyy' }}</span>
+              <span class="days-tag">{{ leave.totalDays }} day(s)</span>
+            </div>
+
+            @if (leave.reason) {
+              <p class="leave-reason">"{{ leave.reason }}"</p>
+            }
+
+            <div class="leave-footer">
+              <span class="applied-at">Applied: {{ leave.appliedAt | date:'dd MMM yyyy' }}</span>
+            </div>
+          </div>
+        }
       }
     </div>
-    <select class="dept-filter" [value]="filterDept()" (change)="filterDept.set($any($event.target).value)">
-      <option value="">All Departments</option>
-      @for (d of departments(); track d.departmentId) {
-        @if (!d.isSystem) { <option [value]="d.departmentId">{{ d.name }}</option> }
-      }
-    </select>
-  </div>
+  }
 
-  <!-- Status Filter Tabs -->
-  <div class="filter-tabs">
-    <button class="filter-tab"          [class.active]="activeFilter() === ''"         (click)="setFilter('')">All</button>
-    <button class="filter-tab pending"  [class.active]="activeFilter() === 'PENDING'"  (click)="setFilter('PENDING')">Pending</button>
-    <button class="filter-tab approved" [class.active]="activeFilter() === 'APPROVED'" (click)="setFilter('APPROVED')">Approved</button>
-    <button class="filter-tab rejected" [class.active]="activeFilter() === 'REJECTED'" (click)="setFilter('REJECTED')">Rejected</button>
-  </div>
+  <!-- ======= HR LEAVE APPROVALS TAB ======= -->
+  @if (activeTab() === 'hr-approvals') {
+    <div class="hr-approvals-header">
+      <p class="hr-approvals-desc">
+        These are leave requests submitted by HR staff. Only Admin can approve or reject them.
+      </p>
+    </div>
 
-  <!-- Leave Cards -->
-  <div class="leaves-grid">
-    @if (loading()) {
-      <div class="loading"><div class="spinner"></div><p>Loading…</p></div>
-    } @else if (!displayedLeaves().length) {
-      <div class="empty">
-        <span>📭</span>
-        <p>{{ leaveSearch() ? 'No results for "' + leaveSearch() + '"' : 'No leave requests found.' }}</p>
+    <!-- Search -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search by HR name…"
+               [value]="leaveSearch()"
+               (input)="leaveSearch.set($any($event.target).value)" />
+        @if (leaveSearch()) {
+          <button class="clear-btn" (click)="leaveSearch.set('')">✕</button>
+        }
       </div>
-    } @else {
-      @for (leave of displayedLeaves(); track leave.leaveId) {
-        <div class="leave-card" [class.pending-card]="leave.status === 'PENDING'">
-          <div class="leave-top">
-            <div>
-              <span class="leave-type">{{ leave.leaveType }}</span>
-              <span class="leave-id">{{ leave.leaveId }}</span>
-            </div>
-            <span class="badge" [class]="statusClass(leave.status)">{{ leave.status }}</span>
-          </div>
+    </div>
 
-          <div class="leave-emp">
-            👤 <strong>{{ empName(leave.employeeId) }}</strong>
-            <span class="leave-emp-id">{{ leave.employeeId }}</span>
-          </div>
-          <div class="leave-meta">
-            <span>🏢 {{ deptNameForLeave(leave.employeeId) }}</span>
-            <span>👩‍💼 HR: {{ hrNameForLeave(leave.employeeId) }}</span>
-          </div>
-
-          <div class="leave-dates">
-            <span>📅 {{ leave.startDate | date:'dd MMM yyyy' }}</span>
-            <span>→</span>
-            <span>{{ leave.endDate | date:'dd MMM yyyy' }}</span>
-            <span class="days-tag">{{ leave.totalDays }} day(s)</span>
-          </div>
-
-          @if (leave.reason) {
-            <p class="leave-reason">"{{ leave.reason }}"</p>
-          }
-
-          <div class="leave-footer">
-            <span class="applied-at">Applied: {{ leave.appliedAt | date:'dd MMM yyyy' }}</span>
-          </div>
+    <div class="leaves-grid">
+      @if (loading()) {
+        <div class="loading"><div class="spinner"></div><p>Loading…</p></div>
+      } @else if (!hrLeaves().length) {
+        <div class="empty">
+          <span>📭</span>
+          <p>{{ leaveSearch() ? 'No results for "' + leaveSearch() + '"' : 'No HR leave requests found.' }}</p>
         </div>
-      }
-    }
-  </div>
+      } @else {
+        @for (leave of hrLeaves(); track leave.leaveId) {
+          <div class="leave-card" [class.pending-card]="leave.status === 'PENDING'">
+            <div class="leave-top">
+              <div>
+                <span class="leave-type">{{ leave.leaveType }}</span>
+                <span class="leave-id">{{ leave.leaveId }}</span>
+              </div>
+              <span class="badge" [class]="statusClass(leave.status)">{{ leave.status }}</span>
+            </div>
 
-  <!-- Leave Balance Lookup -->
+            <div class="leave-emp">
+              👤 <strong>{{ empName(leave.employeeId) }}</strong>
+              <span class="leave-emp-id">{{ leave.employeeId }}</span>
+              <span class="hr-badge-inline">HR</span>
+            </div>
+            <div class="leave-meta">
+              <span>🏢 {{ deptNameForLeave(leave.employeeId) }}</span>
+            </div>
+
+            <div class="leave-dates">
+              <span>📅 {{ leave.startDate | date:'dd MMM yyyy' }}</span>
+              <span>→</span>
+              <span>{{ leave.endDate | date:'dd MMM yyyy' }}</span>
+              <span class="days-tag">{{ leave.totalDays }} day(s)</span>
+            </div>
+
+            @if (leave.reason) {
+              <p class="leave-reason">"{{ leave.reason }}"</p>
+            }
+
+            <div class="leave-footer">
+              <span class="applied-at">Applied: {{ leave.appliedAt | date:'dd MMM yyyy' }}</span>
+              @if (leave.status === 'PENDING') {
+                <div class="leave-actions">
+                  <button class="btn-approve"
+                    [disabled]="actionLoading() === leave.leaveId"
+                    (click)="approve(leave)">
+                    @if (actionLoading() === leave.leaveId) { <span class="spin-sm"></span> } ✓ Approve
+                  </button>
+                  <button class="btn-reject"
+                    [disabled]="actionLoading() === leave.leaveId + '_r'"
+                    (click)="reject(leave)">
+                    @if (actionLoading() === leave.leaveId + '_r') { <span class="spin-sm"></span> } ✕ Reject
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+
+  <!-- Leave Balance Lookup — visible in both tabs -->
   <div class="balance-section">
     <h2>Leave Balance Lookup</h2>
     <p>Load all employees then filter by name to check remaining leave balances</p>

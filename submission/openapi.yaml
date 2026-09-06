@@ -1,0 +1,1099 @@
+openapi: "3.0.3"
+
+info:
+  title: HR Management System API
+  version: "2.0.0"
+  description: |
+    REST API for the Stella Technology HR Management System.
+
+    ## Roles
+    | Role | Access |
+    |------|--------|
+    | **ADMIN** | Registers employees & departments, views all leaves and payroll (read-only on those), approves HR employees' leaves |
+    | **HR** | Manages their department only — approves employee leaves, generates payroll; submits own leaves (approved by Admin) |
+    | **EMPLOYEE** | Applies for leave, views own leaves, payroll, and profile |
+
+    ## Authentication
+    1. Call `POST /api/auth/login` with your credentials
+    2. Copy the `token` from the response
+    3. Click **Authorize** → enter `Bearer <token>`
+    4. All subsequent requests include the token automatically
+
+  contact:
+    name: Hassan Raheem
+    email: hmarwat49@gmail.com
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    # ── Auth ──────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@hrms.com
+        password:
+          type: string
+          example: Admin@1234
+
+    RegisterRequest:
+      type: object
+      required: [email, password, role]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@company.com
+        password:
+          type: string
+          description: "Min 8 chars, requires uppercase, lowercase, and digit"
+          example: Pass@1234
+        role:
+          type: string
+          enum: [ADMIN, HR, EMPLOYEE]
+
+    AuthResponse:
+      type: object
+      properties:
+        token:   { type: string, example: "eyJhbGci..." }
+        email:   { type: string, example: "admin@hrms.com" }
+        role:    { type: string, enum: [ADMIN, HR, EMPLOYEE] }
+        message: { type: string, example: "Login successful" }
+
+    MeResponse:
+      type: object
+      properties:
+        email: { type: string }
+        role:  { type: string, enum: [ADMIN, HR, EMPLOYEE] }
+
+    # ── Employee ──────────────────────────────────────────────────────────
+    EmployeeRequest:
+      type: object
+      required: [name, email, phone, gender, departmentId, designation, salary]
+      properties:
+        name:         { type: string,  example: "Jane Smith" }
+        email:        { type: string,  format: email, example: "jane.smith@company.com" }
+        phone:        { type: string,  example: "+92-301-0000001", minLength: 10, maxLength: 15 }
+        gender:       { type: string,  example: "FEMALE" }
+        dateOfBirth:  { type: string,  format: date, example: "1998-03-12" }
+        address:      { type: string,  example: "456 Park Avenue, Lahore" }
+        departmentId: { type: string,  example: "DEPT-0001" }
+        designation:  { type: string,  example: "Software Engineer" }
+        dateOfJoining: { type: string,  format: date, example: "2026-09-01" }
+        salary:       { type: number,  example: 70000 }
+        allowances:   { type: number,  example: 5000,  default: 0 }
+        deductions:   { type: number,  example: 3000,  default: 0 }
+        employeeType: { type: string,  enum: [EMPLOYEE, MANAGER, HR] }
+        userRole:     { type: string,  enum: [ADMIN, HR, EMPLOYEE] }
+
+    EmployeeUpdateRequest:
+      type: object
+      description: All fields are optional — only include the fields you want to change.
+      properties:
+        name:         { type: string }
+        email:        { type: string, format: email }
+        phone:        { type: string }
+        gender:       { type: string }
+        dateOfBirth:  { type: string, format: date }
+        address:      { type: string }
+        departmentId: { type: string }
+        designation:  { type: string }
+        dateOfJoining: { type: string, format: date }
+        salary:       { type: number }
+        allowances:   { type: number }
+        deductions:   { type: number }
+        employeeType: { type: string, enum: [EMPLOYEE, MANAGER, HR] }
+        userRole:     { type: string, enum: [ADMIN, HR, EMPLOYEE] }
+
+    EmployeeResponse:
+      type: object
+      properties:
+        employeeId:   { type: string,  example: "EMP-0001" }
+        name:         { type: string,  example: "Jane Smith" }
+        email:        { type: string,  example: "jane.smith@company.com" }
+        phone:        { type: string }
+        gender:       { type: string }
+        dateOfBirth:  { type: string,  format: date }
+        address:      { type: string }
+        departmentId: { type: string,  example: "DEPT-0001" }
+        designation:  { type: string }
+        dateOfJoining: { type: string,  format: date }
+        salary:       { type: number }
+        allowances:   { type: number }
+        deductions:   { type: number }
+        status:       { type: string,  enum: [ACTIVE, INACTIVE] }
+        employeeType: { type: string,  enum: [EMPLOYEE, MANAGER, HR] }
+        userRole:     { type: string,  enum: [ADMIN, HR, EMPLOYEE] }
+        createdAt:    { type: string,  format: date-time }
+        updatedAt:    { type: string,  format: date-time }
+
+    EmployeePage:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/EmployeeResponse' }
+        totalElements: { type: integer, example: 42 }
+        totalPages:    { type: integer, example: 5 }
+        number:        { type: integer, example: 0, description: "Current page (0-indexed)" }
+        size:          { type: integer, example: 10 }
+
+    PerformanceNoteRequest:
+      type: object
+      required: [note]
+      properties:
+        note: { type: string, example: "Excellent performance in Q3 2026" }
+
+    EmployeeHistoryResponse:
+      type: object
+      properties:
+        historyId:     { type: string,  example: "HIST-0001" }
+        employeeId:    { type: string,  example: "EMP-0001" }
+        type:          { type: string,  enum: [PROMOTION, DESIGNATION_CHANGE, PERFORMANCE_NOTE] }
+        previousValue: { type: string,  nullable: true, example: "EMPLOYEE" }
+        newValue:      { type: string,  nullable: true, example: "MANAGER" }
+        note:          { type: string,  nullable: true, description: "Populated only for PERFORMANCE_NOTE" }
+        recordedBy:    { type: string,  example: "EMP-0001", description: "employeeId of the admin who made the change" }
+        recordedAt:    { type: string,  format: date-time }
+
+    # ── Department ────────────────────────────────────────────────────────
+    DepartmentRequest:
+      type: object
+      required: [name, hrId]
+      properties:
+        name:        { type: string, example: "Engineering" }
+        description: { type: string, example: "Software development team" }
+        managerId:   { type: string, example: "EMP-0002", description: "Optional. Must be a MANAGER-type employee." }
+        hrId:        { type: string, example: "EMP-0001", description: "Required. Must be an HR-type employee not already assigned to another department." }
+
+    DepartmentUpdateRequest:
+      type: object
+      description: All fields optional — only include what you want to change.
+      properties:
+        name:        { type: string }
+        description: { type: string }
+        managerId:   { type: string }
+        hrId:        { type: string }
+
+    DepartmentResponse:
+      type: object
+      properties:
+        departmentId: { type: string,  example: "DEPT-0001" }
+        name:         { type: string,  example: "Engineering" }
+        description:  { type: string }
+        managerId:    { type: string,  nullable: true }
+        hrId:         { type: string }
+        isSystem:     { type: boolean, description: "True only for the Unassigned system department (DEPT-0000)" }
+        createdAt:    { type: string,  format: date-time }
+        updatedAt:    { type: string,  format: date-time }
+
+    # ── Leave ─────────────────────────────────────────────────────────────
+    LeaveRequest:
+      type: object
+      required: [leaveType, startDate, endDate]
+      properties:
+        leaveType: { type: string, enum: [ANNUAL, CASUAL, SICK, UNPAID] }
+        startDate: { type: string, format: date, example: "2026-10-01" }
+        endDate:   { type: string, format: date, example: "2026-10-05" }
+        reason:    { type: string, example: "Family vacation" }
+
+    LeaveStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [APPROVED, REJECTED] }
+
+    LeaveResponse:
+      type: object
+      properties:
+        leaveId:    { type: string,  example: "LVE-0001" }
+        employeeId: { type: string,  example: "EMP-0002" }
+        leaveType:  { type: string,  enum: [ANNUAL, CASUAL, SICK, UNPAID] }
+        startDate:  { type: string,  format: date }
+        endDate:    { type: string,  format: date }
+        totalDays:  { type: integer, example: 5 }
+        reason:     { type: string,  nullable: true }
+        status:     { type: string,  enum: [PENDING, APPROVED, REJECTED] }
+        appliedAt:  { type: string,  format: date-time }
+        updatedAt:  { type: string,  format: date-time }
+
+    LeaveBalanceResponse:
+      type: object
+      properties:
+        employeeId:   { type: string,  example: "EMP-0001" }
+        annualLeaves: { type: integer, example: 18, description: "Default: 20. Decremented on approval." }
+        casualLeaves: { type: integer, example: 10, description: "Default: 10." }
+        sickLeaves:   { type: integer, example: 8,  description: "Default: 15." }
+        unpaidLeaves: { type: integer, example: 30, description: "Default: 30." }
+
+    # ── Payroll ───────────────────────────────────────────────────────────
+    PayrollRequest:
+      type: object
+      required: [employeeId, month, year]
+      properties:
+        employeeId: { type: string,  example: "EMP-0002" }
+        month:      { type: integer, minimum: 1, maximum: 12, example: 9 }
+        year:       { type: integer, minimum: 2000, example: 2026 }
+
+    PayrollResponse:
+      type: object
+      properties:
+        payrollId:     { type: string,  example: "PAY-0001" }
+        employeeId:    { type: string,  example: "EMP-0002" }
+        month:         { type: integer, example: 9 }
+        year:          { type: integer, example: 2026 }
+        basicSalary:   { type: number,  example: 70000 }
+        allowances:    { type: number,  example: 5000 }
+        deductions:    { type: number,  example: 3000 }
+        netSalary:     { type: number,  example: 72000, description: "basicSalary + allowances - deductions" }
+        paymentStatus: { type: string,  enum: [PAID, UNPAID] }
+        generatedAt:   { type: string,  format: date-time }
+        updatedAt:     { type: string,  format: date-time }
+
+    # ── Errors ────────────────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      properties:
+        status:    { type: integer, example: 400 }
+        message:   { type: string,  example: "Validation failed" }
+        timestamp: { type: string,  format: date-time }
+
+  responses:
+    Unauthorized:
+      description: "401 — Missing or expired JWT token"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: "403 — Authenticated but role does not have permission"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: "404 — Resource not found"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    BadRequest:
+      description: "400 — Validation error or business rule violation"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Authentication
+    description: Login, register user accounts, and get current user profile
+  - name: Employees
+    description: Employee CRUD, history, performance notes, own leaves and payroll
+  - name: Departments
+    description: Department management — create, update, delete, reassign employees
+  - name: Leaves
+    description: Apply for leave, approve/reject, view balances
+  - name: Payroll
+    description: Generate and manage payroll records
+
+paths:
+
+  # ════════════════════════════════════════════════════════════
+  #  AUTH
+  # ════════════════════════════════════════════════════════════
+
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login
+      description: Authenticates a user and returns a JWT token. Login is case-insensitive on email. No authentication required.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        "200":
+          description: Login successful — returns JWT token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+              example:
+                token: "eyJhbGci..."
+                email: "admin@hrms.com"
+                role: "ADMIN"
+                message: "Login successful"
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          description: Invalid email or password
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register user account (Admin only)
+      description: Creates a standalone user account (no employee profile). Typically not needed — registering via `POST /api/employees` creates both the employee profile and the user account in one step.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        "201":
+          description: User account created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+
+  /api/auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user profile
+      description: Returns the email and role of the currently authenticated user. Accessible by all roles.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeResponse' }
+              example:
+                email: "admin@hrms.com"
+                role: "ADMIN"
+        "401": { $ref: '#/components/responses/Unauthorized' }
+
+  # ════════════════════════════════════════════════════════════
+  #  EMPLOYEES
+  # ════════════════════════════════════════════════════════════
+
+  /api/employees/me:
+    get:
+      tags: [Employees]
+      summary: Get own employee profile
+      description: Returns the logged-in user's employee profile. Accessible by all roles.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Own employee profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeeResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+
+  /api/employees:
+    get:
+      tags: [Employees]
+      summary: List employees (paginated)
+      description: |
+        Returns a paginated list of employees.
+        - **ADMIN**: sees all employees. All query params apply.
+        - **HR**: automatically scoped to their own department (departmentId param is ignored).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+          description: Page number (0-indexed)
+        - name: size
+          in: query
+          schema: { type: integer, default: 10 }
+          description: Results per page
+        - name: name
+          in: query
+          schema: { type: string }
+          description: Filter by name (partial, case-insensitive)
+        - name: departmentId
+          in: query
+          schema: { type: string }
+          description: Filter by department ID (ADMIN only — ignored for HR)
+        - name: status
+          in: query
+          schema: { type: string, enum: [ACTIVE, INACTIVE] }
+          description: Filter by employment status
+        - name: userRole
+          in: query
+          schema: { type: string, enum: [ADMIN, HR, EMPLOYEE] }
+          description: Filter by role
+      responses:
+        "200":
+          description: Paginated employee list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeePage' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+
+    post:
+      tags: [Employees]
+      summary: Register new employee
+      description: |
+        Creates both the employee profile and their login user account in one step.
+        - HR employees may be registered without a department (they are placed in Unassigned/DEPT-0000 until a department is created for them).
+        - Requires **ADMIN** or **HR**.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmployeeRequest' }
+      responses:
+        "201":
+          description: Employee created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeeResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+
+  /api/employees/{employeeId}:
+    get:
+      tags: [Employees]
+      summary: Get employee by ID
+      description: Returns a single employee. Accessible by ADMIN, HR, and EMPLOYEE.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string, example: "EMP-0001" }
+      responses:
+        "200":
+          description: Employee found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeeResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+    put:
+      tags: [Employees]
+      summary: Update employee
+      description: |
+        Partially updates an employee's profile. All fields are optional — send only the fields you want to change.
+        Requires **ADMIN** or **HR**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string, example: "EMP-0001" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmployeeUpdateRequest' }
+            example:
+              designation: "Senior Software Engineer"
+              salary: 85000
+      responses:
+        "200":
+          description: Employee updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeeResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+    delete:
+      tags: [Employees]
+      summary: Delete employee
+      description: |
+        Deletes the employee along with their user account, leave balance, and all leave requests.
+        Requires **ADMIN**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string, example: "EMP-0001" }
+      responses:
+        "204":
+          description: Employee deleted successfully (no body)
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /api/employees/{employeeId}/type:
+    patch:
+      tags: [Employees]
+      summary: Change employee type
+      description: |
+        Changes an employee's type (EMPLOYEE / MANAGER / HR).
+        Automatically creates a `PROMOTION` or `DESIGNATION_CHANGE` history record.
+        Requires **ADMIN**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string, example: "EMP-0001" }
+        - name: employeeType
+          in: query
+          required: true
+          schema: { type: string, enum: [EMPLOYEE, MANAGER, HR] }
+      responses:
+        "200":
+          description: Employee type updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeeResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /api/employees/{employeeId}/performance-notes:
+    post:
+      tags: [Employees]
+      summary: Add performance note
+      description: Adds a free-text performance note to the employee's history. Requires **ADMIN**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string, example: "EMP-0001" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PerformanceNoteRequest' }
+      responses:
+        "201":
+          description: Performance note added
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeeHistoryResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /api/employees/{employeeId}/history:
+    get:
+      tags: [Employees]
+      summary: Get employee history
+      description: |
+        Returns the promotion, designation change, and performance note history for an employee.
+        Accessible by ADMIN, HR, and the employee themselves.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string, example: "EMP-0001" }
+        - name: type
+          in: query
+          required: false
+          schema: { type: string, enum: [PROMOTION, DESIGNATION_CHANGE, PERFORMANCE_NOTE] }
+          description: Filter by history record type
+      responses:
+        "200":
+          description: History records
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EmployeeHistoryResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /api/employees/{employeeId}/leaves:
+    get:
+      tags: [Employees]
+      summary: Get employee's leave history
+      description: Returns all leave requests for the specified employee. Accessible by ADMIN, HR, and the employee themselves.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string, example: "EMP-0001" }
+      responses:
+        "200":
+          description: Leave history
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LeaveResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /api/employees/{employeeId}/payroll:
+    get:
+      tags: [Employees]
+      summary: Get employee's payroll history
+      description: Returns all payroll records for the specified employee. Accessible by ADMIN, HR, and the employee themselves.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string, example: "EMP-0001" }
+      responses:
+        "200":
+          description: Payroll records
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PayrollResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  # ════════════════════════════════════════════════════════════
+  #  DEPARTMENTS
+  # ════════════════════════════════════════════════════════════
+
+  /api/departments:
+    get:
+      tags: [Departments]
+      summary: List all departments
+      description: Returns all departments. Optional name search. Accessible by ADMIN and HR.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          schema: { type: string, example: "Engineering" }
+          description: Search by department name (partial match)
+      responses:
+        "200":
+          description: Department list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DepartmentResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+
+    post:
+      tags: [Departments]
+      summary: Create department
+      description: |
+        Creates a new department and assigns an HR to it.
+        - `hrId` is required and must reference an HR-type employee.
+        - The same HR cannot be assigned to more than one department.
+        - `managerId` is optional and must reference a MANAGER-type employee.
+        Requires **ADMIN**.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DepartmentRequest' }
+      responses:
+        "201":
+          description: Department created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DepartmentResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+
+  /api/departments/{departmentId}:
+    get:
+      tags: [Departments]
+      summary: Get department by ID
+      description: Returns a single department. Accessible by ADMIN and HR.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: departmentId
+          in: path
+          required: true
+          schema: { type: string, example: "DEPT-0001" }
+      responses:
+        "200":
+          description: Department found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DepartmentResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+    put:
+      tags: [Departments]
+      summary: Update department
+      description: Partially updates a department. All fields are optional. Requires **ADMIN**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: departmentId
+          in: path
+          required: true
+          schema: { type: string, example: "DEPT-0001" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DepartmentUpdateRequest' }
+            example:
+              description: "Updated team description"
+      responses:
+        "200":
+          description: Department updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DepartmentResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+    delete:
+      tags: [Departments]
+      summary: Delete department
+      description: |
+        Deletes a department. If employees remain, provide `targetDepartmentId` to move them first,
+        or use `PUT /{departmentId}/reassign-employees` beforehand.
+        Requires **ADMIN**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: departmentId
+          in: path
+          required: true
+          schema: { type: string, example: "DEPT-0001" }
+        - name: targetDepartmentId
+          in: query
+          required: false
+          schema: { type: string, example: "DEPT-0002" }
+          description: Move employees to this department before deletion
+      responses:
+        "204":
+          description: Department deleted (no body)
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /api/departments/{departmentId}/reassign-employees:
+    put:
+      tags: [Departments]
+      summary: Reassign all employees to another department
+      description: Moves all employees from this department to `targetDepartmentId`. Useful before deletion. Requires **ADMIN**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: departmentId
+          in: path
+          required: true
+          schema: { type: string, example: "DEPT-0001" }
+        - name: targetDepartmentId
+          in: query
+          required: true
+          schema: { type: string, example: "DEPT-0002" }
+      responses:
+        "204":
+          description: Employees reassigned (no body)
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /api/departments/{departmentId}/employee-count:
+    get:
+      tags: [Departments]
+      summary: Get employee count for a department
+      description: Returns the total number of employees in the department. Requires **ADMIN**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: departmentId
+          in: path
+          required: true
+          schema: { type: string, example: "DEPT-0001" }
+      responses:
+        "200":
+          description: Employee count
+          content:
+            application/json:
+              schema: { type: integer, example: 12 }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  # ════════════════════════════════════════════════════════════
+  #  LEAVES
+  # ════════════════════════════════════════════════════════════
+
+  /api/leaves:
+    post:
+      tags: [Leaves]
+      summary: Apply for leave
+      description: |
+        Submits a leave request. The `employeeId` is automatically derived from the JWT — it does not need to be in the request body.
+        - **HR employees**: their leave goes to **Admin** for approval (HR cannot approve their own type).
+        - **EMPLOYEE**: their leave goes to HR for approval.
+        Accessible by ADMIN, HR, and EMPLOYEE.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LeaveRequest' }
+      responses:
+        "201":
+          description: Leave request submitted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LeaveResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+
+    get:
+      tags: [Leaves]
+      summary: List leave requests
+      description: |
+        Returns leave requests based on the caller's role:
+        - **ADMIN**: all leave requests org-wide (including HR employees' leaves).
+        - **HR**: only leave requests from their own department (auto-scoped by JWT). HR employees' own leaves do not appear here.
+        Optional `status` filter applies for both roles.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+          description: Filter by leave status
+      responses:
+        "200":
+          description: Leave requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LeaveResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+
+  /api/leaves/{leaveId}/status:
+    put:
+      tags: [Leaves]
+      summary: Approve or reject a leave request
+      description: |
+        Updates the status of a PENDING leave request to APPROVED or REJECTED.
+        - **HR**: can approve/reject leaves for non-HR employees in their department.
+          Returns **403** if the leave belongs to an HR-type employee.
+        - **ADMIN**: can approve/reject any leave, including HR employees' leaves.
+        Only PENDING requests can be actioned — returns 400 for already-processed requests.
+        Approving an ANNUAL/CASUAL/SICK/UNPAID leave automatically decrements the employee's balance.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: leaveId
+          in: path
+          required: true
+          schema: { type: string, example: "LVE-0001" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LeaveStatusRequest' }
+      responses:
+        "200":
+          description: Leave status updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LeaveResponse' }
+        "400":
+          description: Leave is not PENDING, or validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403":
+          description: "403 — HR attempting to action an HR employee's leave"
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /api/leaves/balance:
+    get:
+      tags: [Leaves]
+      summary: List leave balances
+      description: |
+        Returns leave balances based on the caller's role:
+        - **ADMIN**: all employees, with optional `name` filter.
+        - **HR**: only employees in their own department (auto-scoped).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          schema: { type: string, example: "John" }
+          description: Filter by employee name (ADMIN only — ignored for HR)
+      responses:
+        "200":
+          description: Leave balance list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LeaveBalanceResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+
+  /api/leaves/balance/{employeeId}:
+    get:
+      tags: [Leaves]
+      summary: Get leave balance for a specific employee
+      description: Returns the remaining leave balance for one employee. Accessible by ADMIN, HR, and the employee themselves.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string, example: "EMP-0001" }
+      responses:
+        "200":
+          description: Leave balance
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LeaveBalanceResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  # ════════════════════════════════════════════════════════════
+  #  PAYROLL
+  # ════════════════════════════════════════════════════════════
+
+  /api/payroll/generate:
+    post:
+      tags: [Payroll]
+      summary: Generate payroll
+      description: |
+        Generates a monthly payroll record for an employee.
+        - The employee must belong to the HR's own department.
+        - Returns **400** if a record already exists for that employee/month/year combination.
+        - `netSalary` is computed as: `basicSalary + allowances - deductions`.
+        Requires **HR**.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PayrollRequest' }
+      responses:
+        "201":
+          description: Payroll generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PayrollResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /api/payroll:
+    get:
+      tags: [Payroll]
+      summary: List payroll records
+      description: |
+        Returns payroll records based on the caller's role:
+        - **ADMIN**: all records org-wide.
+        - **HR**: only records for their own department (auto-scoped by JWT).
+        All filters are optional and apply for both roles.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 12, example: 9 }
+        - name: year
+          in: query
+          required: false
+          schema: { type: integer, example: 2026 }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [PAID, UNPAID] }
+      responses:
+        "200":
+          description: Payroll records
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PayrollResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+
+  /api/payroll/{payrollId}/status:
+    patch:
+      tags: [Payroll]
+      summary: Update payment status
+      description: |
+        Marks a payroll record as PAID or UNPAID.
+        - Status is passed as a **query parameter** (not in the request body).
+        Requires **HR**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: payrollId
+          in: path
+          required: true
+          schema: { type: string, example: "PAY-0001" }
+        - name: status
+          in: query
+          required: true
+          schema: { type: string, enum: [PAID, UNPAID] }
+      responses:
+        "200":
+          description: Payment status updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PayrollResponse' }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }

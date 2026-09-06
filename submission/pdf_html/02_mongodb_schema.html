@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HR Management System — MongoDB Schema</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+  <div class="cover">
+    <div class="logo">Stella Technology — Internship Final Project</div>
+    <h1>MongoDB Database Schema</h1>
+    <div class="subtitle">Collection definitions, field types, constraints, and example documents</div>
+    <div class="meta">
+      <span><strong>Database:</strong> hr_management_db</span>
+      <span><strong>Collections:</strong> 7</span>
+      <span><strong>Engine:</strong> MongoDB 6+ · Spring Data MongoDB</span>
+    </div>
+  </div>
+
+  <h1>Overview</h1>
+  <table>
+    <thead><tr><th>Collection</th><th>Purpose</th><th>Auto-seeded</th></tr></thead>
+    <tbody>
+      <tr><td><code>users</code></td><td>Login credentials — email, hashed password, role</td><td>Admin on first startup</td></tr>
+      <tr><td><code>employees</code></td><td>Full employee profiles linked to users and departments</td><td>No</td></tr>
+      <tr><td><code>departments</code></td><td>Department records with manager and HR assignment</td><td>DEPT-0000 on first startup</td></tr>
+      <tr><td><code>leave_requests</code></td><td>Individual leave applications with approval status</td><td>No</td></tr>
+      <tr><td><code>leave_balances</code></td><td>Remaining leave quota per employee (4 leave types)</td><td>Auto-created on registration</td></tr>
+      <tr><td><code>payroll</code></td><td>Monthly payroll records with net salary</td><td>No</td></tr>
+      <tr><td><code>employee_history</code></td><td>Immutable audit trail — promotions, designation changes, notes</td><td>No</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Collection Schemas</h1>
+
+  <h2>users</h2>
+  <p>One document per registered user. Passwords are BCrypt-hashed and never returned by any API endpoint.</p>
+  <pre>{
+  <span class="key">"_id"</span>:       <span class="str">"ObjectId"</span>,
+  <span class="key">"email"</span>:     <span class="str">"admin@hrms.com"</span>,
+  <span class="key">"password"</span>:  <span class="str">"$2a$10$..."</span>,      <span class="cm">// BCrypt hash — never exposed</span>
+  <span class="key">"role"</span>:      <span class="str">"ADMIN"</span>,
+  <span class="key">"createdAt"</span>: <span class="str">"2026-09-03T01:50:00"</span>,
+  <span class="key">"updatedAt"</span>: <span class="str">"2026-09-03T01:50:00"</span>
+}</pre>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>_id</code></td><td>ObjectId</td><td>Auto</td><td>MongoDB default primary key</td></tr>
+      <tr><td><code>email</code></td><td>String</td><td>Yes</td><td>Unique. Lookup is case-insensitive at login.</td></tr>
+      <tr><td><code>password</code></td><td>String</td><td>Yes</td><td>BCrypt-hashed. Never returned by API.</td></tr>
+      <tr><td><code>role</code></td><td>Enum</td><td>Yes</td><td><code>ADMIN</code> | <code>EMPLOYEE</code> | <code>HR</code></td></tr>
+      <tr><td><code>createdAt</code></td><td>DateTime</td><td>Auto</td><td>Set on registration</td></tr>
+      <tr><td><code>updatedAt</code></td><td>DateTime</td><td>Auto</td><td>Updated on every change</td></tr>
+    </tbody>
+  </table>
+
+  <h2>employees</h2>
+  <p>Full profile for each employee. Linked to <code>users</code> by email and to <code>departments</code> by <code>departmentId</code>.</p>
+  <pre>{
+  <span class="key">"_id"</span>:           <span class="str">"ObjectId"</span>,
+  <span class="key">"employeeId"</span>:    <span class="str">"EMP-0001"</span>,
+  <span class="key">"name"</span>:          <span class="str">"John Doe"</span>,
+  <span class="key">"email"</span>:         <span class="str">"john.doe@company.com"</span>,
+  <span class="key">"phone"</span>:         <span class="str">"+92-300-1234567"</span>,
+  <span class="key">"gender"</span>:        <span class="str">"MALE"</span>,
+  <span class="key">"dateOfBirth"</span>:   <span class="str">"1995-06-15"</span>,
+  <span class="key">"address"</span>:       <span class="str">"123 Main Street, Karachi"</span>,
+  <span class="key">"departmentId"</span>:  <span class="str">"DEPT-0001"</span>,
+  <span class="key">"designation"</span>:   <span class="str">"Software Engineer"</span>,
+  <span class="key">"dateOfJoining"</span>: <span class="str">"2026-01-01"</span>,
+  <span class="key">"salary"</span>:        <span class="num">80000</span>,
+  <span class="key">"allowances"</span>:    <span class="num">10000</span>,
+  <span class="key">"deductions"</span>:    <span class="num">5000</span>,
+  <span class="key">"employeeType"</span>:  <span class="str">"EMPLOYEE"</span>,
+  <span class="key">"userRole"</span>:      <span class="str">"EMPLOYEE"</span>,
+  <span class="key">"status"</span>:        <span class="str">"ACTIVE"</span>,
+  <span class="key">"createdAt"</span>:     <span class="str">"2026-09-03T10:00:00"</span>,
+  <span class="key">"updatedAt"</span>:     <span class="str">"2026-09-03T10:00:00"</span>
+}</pre>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>employeeId</code></td><td>String</td><td>Auto</td><td>Sequential: EMP-0001, EMP-0002, …</td></tr>
+      <tr><td><code>name</code></td><td>String</td><td>Yes</td><td>Full name</td></tr>
+      <tr><td><code>email</code></td><td>String</td><td>Yes</td><td>Must match <code>users.email</code> for the same person</td></tr>
+      <tr><td><code>phone</code></td><td>String</td><td>Yes</td><td></td></tr>
+      <tr><td><code>gender</code></td><td>Enum</td><td>Yes</td><td><code>MALE</code> | <code>FEMALE</code></td></tr>
+      <tr><td><code>dateOfBirth</code></td><td>Date</td><td>Yes</td><td></td></tr>
+      <tr><td><code>address</code></td><td>String</td><td>Yes</td><td></td></tr>
+      <tr><td><code>departmentId</code></td><td>String</td><td>Yes</td><td>References <code>departments.departmentId</code>. HR employees default to DEPT-0000 until assigned.</td></tr>
+      <tr><td><code>designation</code></td><td>String</td><td>Yes</td><td>Job title. Changing it auto-creates a DESIGNATION_CHANGE history record.</td></tr>
+      <tr><td><code>dateOfJoining</code></td><td>Date</td><td>Yes</td><td></td></tr>
+      <tr><td><code>salary</code></td><td>Number</td><td>Yes</td><td>Base monthly salary</td></tr>
+      <tr><td><code>allowances</code></td><td>Number</td><td>No</td><td>Added to net salary in payroll</td></tr>
+      <tr><td><code>deductions</code></td><td>Number</td><td>No</td><td>Subtracted from net salary in payroll</td></tr>
+      <tr><td><code>employeeType</code></td><td>Enum</td><td>Yes</td><td><code>EMPLOYEE</code> | <code>MANAGER</code> | <code>HR</code></td></tr>
+      <tr><td><code>userRole</code></td><td>Enum</td><td>Yes</td><td><code>EMPLOYEE</code> | <code>HR</code> — determines which dashboard the person sees</td></tr>
+      <tr><td><code>status</code></td><td>Enum</td><td>Auto</td><td><code>ACTIVE</code> | <code>INACTIVE</code>. Defaults to ACTIVE.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>departments</h2>
+  <p>One document per department. Every department must have a dedicated HR employee assigned.</p>
+  <pre>{
+  <span class="key">"_id"</span>:          <span class="str">"ObjectId"</span>,
+  <span class="key">"departmentId"</span>: <span class="str">"DEPT-0001"</span>,
+  <span class="key">"name"</span>:         <span class="str">"Engineering"</span>,
+  <span class="key">"description"</span>:  <span class="str">"Software development team"</span>,
+  <span class="key">"managerId"</span>:    <span class="str">"EMP-0002"</span>,   <span class="cm">// optional</span>
+  <span class="key">"hrId"</span>:         <span class="str">"EMP-0003"</span>,   <span class="cm">// required — one HR per dept</span>
+  <span class="key">"isSystem"</span>:     <span class="kw">false</span>,
+  <span class="key">"createdAt"</span>:    <span class="str">"2026-09-03T11:00:00"</span>,
+  <span class="key">"updatedAt"</span>:    <span class="str">"2026-09-03T11:00:00"</span>
+}</pre>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>departmentId</code></td><td>String</td><td>Auto</td><td>Sequential: DEPT-0001, DEPT-0002, …</td></tr>
+      <tr><td><code>name</code></td><td>String</td><td>Yes</td><td>Unique department name</td></tr>
+      <tr><td><code>description</code></td><td>String</td><td>No</td><td></td></tr>
+      <tr><td><code>managerId</code></td><td>String</td><td>No</td><td>References <code>employees.employeeId</code>. Must be MANAGER type.</td></tr>
+      <tr><td><code>hrId</code></td><td>String</td><td>Yes</td><td>References <code>employees.employeeId</code>. Must be HR role. One HR per department only — uniqueness enforced at service layer.</td></tr>
+      <tr><td><code>isSystem</code></td><td>Boolean</td><td>Auto</td><td><code>true</code> only for DEPT-0000 (Unassigned). System departments cannot be deleted.</td></tr>
+    </tbody>
+  </table>
+  <div class="info-box"><strong>Auto-seeded system department:</strong> <code>DEPT-0000 "Unassigned"</code> — a holding bucket for employees without a department. Created automatically on first startup.</div>
+
+  <h2>leave_requests</h2>
+  <p>One document per leave application submitted by an employee.</p>
+  <pre>{
+  <span class="key">"_id"</span>:        <span class="str">"ObjectId"</span>,
+  <span class="key">"leaveId"</span>:    <span class="str">"LVE-0001"</span>,
+  <span class="key">"employeeId"</span>: <span class="str">"EMP-0001"</span>,
+  <span class="key">"leaveType"</span>:  <span class="str">"ANNUAL"</span>,
+  <span class="key">"startDate"</span>:  <span class="str">"2026-10-01"</span>,
+  <span class="key">"endDate"</span>:    <span class="str">"2026-10-05"</span>,
+  <span class="key">"totalDays"</span>:  <span class="num">5</span>,
+  <span class="key">"reason"</span>:     <span class="str">"Family vacation"</span>,
+  <span class="key">"status"</span>:     <span class="str">"PENDING"</span>,
+  <span class="key">"appliedAt"</span>:  <span class="str">"2026-09-15T09:00:00"</span>,
+  <span class="key">"updatedAt"</span>:  <span class="str">"2026-09-15T09:00:00"</span>
+}</pre>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>leaveId</code></td><td>String</td><td>Sequential: LVE-0001, LVE-0002, …</td></tr>
+      <tr><td><code>employeeId</code></td><td>String</td><td>References <code>employees.employeeId</code></td></tr>
+      <tr><td><code>leaveType</code></td><td>Enum</td><td><code>ANNUAL</code> | <code>CASUAL</code> | <code>SICK</code> | <code>UNPAID</code></td></tr>
+      <tr><td><code>startDate</code></td><td>Date</td><td>Must not be after <code>endDate</code></td></tr>
+      <tr><td><code>endDate</code></td><td>Date</td><td></td></tr>
+      <tr><td><code>totalDays</code></td><td>Number</td><td>Auto-calculated: <code>endDate − startDate + 1</code></td></tr>
+      <tr><td><code>reason</code></td><td>String</td><td></td></tr>
+      <tr><td><code>status</code></td><td>Enum</td><td><code>PENDING</code> → <code>APPROVED</code> or <code>REJECTED</code>. Only PENDING requests can be actioned by HR.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>leave_balances</h2>
+  <p>One document per employee. Auto-created with default values when an employee profile is registered.</p>
+  <pre>{
+  <span class="key">"_id"</span>:          <span class="str">"ObjectId"</span>,
+  <span class="key">"employeeId"</span>:   <span class="str">"EMP-0001"</span>,
+  <span class="key">"annualLeaves"</span>: <span class="num">18</span>,
+  <span class="key">"casualLeaves"</span>: <span class="num">10</span>,
+  <span class="key">"sickLeaves"</span>:   <span class="num">8</span>,
+  <span class="key">"unpaidLeaves"</span>: <span class="num">5</span>,
+  <span class="key">"updatedAt"</span>:    <span class="str">"2026-09-03T10:00:00"</span>
+}</pre>
+  <p>Each quota field is automatically decremented when a leave request of that type is <strong>approved</strong>. If the balance is insufficient, the approval is rejected with a validation error.</p>
+
+  <h2>payroll</h2>
+  <p>One document per employee per month/year. Duplicate payroll for the same employee + month + year is not allowed.</p>
+  <pre>{
+  <span class="key">"_id"</span>:           <span class="str">"ObjectId"</span>,
+  <span class="key">"payrollId"</span>:     <span class="str">"PAY-0001"</span>,
+  <span class="key">"employeeId"</span>:    <span class="str">"EMP-0001"</span>,
+  <span class="key">"month"</span>:         <span class="num">9</span>,
+  <span class="key">"year"</span>:          <span class="num">2026</span>,
+  <span class="key">"basicSalary"</span>:   <span class="num">80000</span>,
+  <span class="key">"allowances"</span>:    <span class="num">10000</span>,
+  <span class="key">"deductions"</span>:    <span class="num">5000</span>,
+  <span class="key">"netSalary"</span>:     <span class="num">85000</span>,     <span class="cm">// basicSalary + allowances − deductions</span>
+  <span class="key">"paymentStatus"</span>: <span class="str">"UNPAID"</span>,
+  <span class="key">"generatedAt"</span>:   <span class="str">"2026-09-30T18:00:00"</span>,
+  <span class="key">"updatedAt"</span>:     <span class="str">"2026-09-30T18:00:00"</span>
+}</pre>
+  <table>
+    <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>basicSalary</code></td><td>Copied from <code>employees.salary</code> at generation time</td></tr>
+      <tr><td><code>allowances</code></td><td>Copied from <code>employees.allowances</code></td></tr>
+      <tr><td><code>deductions</code></td><td>Copied from <code>employees.deductions</code></td></tr>
+      <tr><td><code>netSalary</code></td><td>Auto-calculated: <code>basicSalary + allowances − deductions</code></td></tr>
+      <tr><td><code>paymentStatus</code></td><td>Starts as <code>UNPAID</code>. HR marks it <code>PAID</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>employee_history</h2>
+  <p>Immutable audit log. Records are never deleted — they capture every significant event in an employee's career.</p>
+  <pre>{
+  <span class="key">"_id"</span>:            <span class="str">"ObjectId"</span>,
+  <span class="key">"employeeId"</span>:     <span class="str">"EMP-0001"</span>,
+  <span class="key">"type"</span>:           <span class="str">"PROMOTION"</span>,
+  <span class="key">"previousValue"</span>:  <span class="str">"EMPLOYEE"</span>,
+  <span class="key">"newValue"</span>:       <span class="str">"MANAGER"</span>,
+  <span class="key">"note"</span>:           <span class="str">"Promoted to Manager role"</span>,
+  <span class="key">"recordedAt"</span>:     <span class="str">"2026-09-10T14:30:00"</span>
+}</pre>
+  <table>
+    <thead><tr><th>Trigger</th><th>Type</th><th>Previous / New value</th></tr></thead>
+    <tbody>
+      <tr><td>Admin changes employee type</td><td><code>PROMOTION</code></td><td>Old type → New type (e.g. EMPLOYEE → MANAGER)</td></tr>
+      <tr><td>Admin changes designation via profile update</td><td><code>DESIGNATION_CHANGE</code></td><td>Old designation → New designation</td></tr>
+      <tr><td>Admin adds a performance note</td><td><code>PERFORMANCE_NOTE</code></td><td>Note text stored in <code>note</code> field</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Entity Relationships</h1>
+  <pre>users ──────────────────────────── employees
+(email links the two)              (employeeId)
+                                        │
+                          ┌─────────────┼────────────────────┐
+                          │             │                    │
+                     departments   leave_requests        payroll
+                     (managerId,   (employeeId)       (employeeId)
+                      hrId →
+                      employees)        │                    │
+                                  leave_balances     employee_history
+                                  (employeeId)        (employeeId)</pre>
+
+  <div class="info-box">MongoDB does not enforce foreign key constraints. Referential integrity is maintained at the application (service) layer. For example, the service validates that a department's <code>hrId</code> references an existing HR-type employee before saving.</div>
+
+  <hr>
+
+  <h1>Recommended Indexes (Production)</h1>
+  <table>
+    <thead><tr><th>Collection</th><th>Field(s)</th><th>Type</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td><code>users</code></td><td><code>email</code></td><td>Unique</td><td>Login lookup</td></tr>
+      <tr><td><code>employees</code></td><td><code>employeeId</code></td><td>Unique</td><td>Profile lookup by ID</td></tr>
+      <tr><td><code>employees</code></td><td><code>email</code></td><td>Unique</td><td>Prevents duplicate profiles</td></tr>
+      <tr><td><code>employees</code></td><td><code>departmentId</code></td><td>Regular</td><td>Department scoping queries</td></tr>
+      <tr><td><code>departments</code></td><td><code>departmentId</code></td><td>Unique</td><td>Department lookup</td></tr>
+      <tr><td><code>departments</code></td><td><code>hrId</code></td><td>Unique</td><td>Enforce one HR per department</td></tr>
+      <tr><td><code>leave_requests</code></td><td><code>employeeId</code></td><td>Regular</td><td>Fetch employee's leave history</td></tr>
+      <tr><td><code>leave_requests</code></td><td><code>status</code></td><td>Regular</td><td>Filter by status</td></tr>
+      <tr><td><code>leave_balances</code></td><td><code>employeeId</code></td><td>Unique</td><td>One balance per employee</td></tr>
+      <tr><td><code>payroll</code></td><td><code>employeeId</code></td><td>Regular</td><td>Payroll history per employee</td></tr>
+      <tr><td><code>payroll</code></td><td><code>(employeeId, month, year)</code></td><td>Compound Unique</td><td>Prevent duplicate monthly payroll</td></tr>
+      <tr><td><code>employee_history</code></td><td><code>employeeId</code></td><td>Regular</td><td>History timeline per employee</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:40px; text-align:center; color:#94a3b8; font-size:9pt; border-top:1px solid #e2e8f0; padding-top:16px;">
+    HR Management System · MongoDB Schema · Stella Technology Internship Project, 2026 · Hassan Raheem
+  </p>
+
+</div>
+</body>
+</html>

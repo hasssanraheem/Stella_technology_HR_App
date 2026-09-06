@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HR Management System — Postman Collection Guide</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+  <div class="cover">
+    <div class="logo">Stella Technology — Internship Final Project</div>
+    <h1>Postman Collection Guide</h1>
+    <div class="subtitle">How to import, configure, and test every API endpoint</div>
+    <div class="meta">
+      <span><strong>Base URL:</strong> http://localhost:8080</span>
+      <span><strong>Auth:</strong> JWT Bearer Token</span>
+      <span><strong>Requests:</strong> 20 across 5 folders</span>
+    </div>
+  </div>
+
+  <h1>Quick Start</h1>
+  <ol>
+    <li>Open <strong>Postman</strong> (download at postman.com if not installed)</li>
+    <li>Click <strong>Import</strong> (top-left) → drag in <code>postman_collection.json</code></li>
+    <li>The collection <em>HR Management System</em> appears in the sidebar</li>
+    <li>Make sure the backend is running on <strong>http://localhost:8080</strong></li>
+    <li>Make sure MongoDB is running on <strong>localhost:27017</strong></li>
+    <li>Run <strong>Login</strong> first (folder 1) → copy the token → paste into collection variables</li>
+    <li>All other requests automatically include the token</li>
+  </ol>
+
+  <div class="info-box">
+    <strong>Tip:</strong> You can also import <code>openapi.yaml</code> directly into Postman (Import → select file) to generate a full request collection from the OpenAPI spec automatically.
+  </div>
+
+  <hr>
+
+  <h1>Collection Variables</h1>
+  <p>Open the collection → click the <strong>Variables</strong> tab. These variables are auto-referenced by all requests.</p>
+  <table>
+    <thead><tr><th>Variable</th><th>Initial Value</th><th>How to set</th></tr></thead>
+    <tbody>
+      <tr><td><code>base_url</code></td><td>http://localhost:8080</td><td>Change only if backend runs on a different port</td></tr>
+      <tr><td><code>jwt_token</code></td><td><em>empty</em></td><td>Copy from Login response → paste here</td></tr>
+      <tr><td><code>employee_id</code></td><td><em>empty</em></td><td>Copy from any employee response (e.g. <code>EMP-0001</code>)</td></tr>
+      <tr><td><code>department_id</code></td><td><em>empty</em></td><td>Copy from any department response (e.g. <code>DEPT-0001</code>)</td></tr>
+      <tr><td><code>leave_id</code></td><td><em>empty</em></td><td>Copy from any leave response (e.g. <code>LVE-0001</code>)</td></tr>
+      <tr><td><code>payroll_id</code></td><td><em>empty</em></td><td>Copy from any payroll response (e.g. <code>PAY-0001</code>)</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Folder 1 — Authentication</h1>
+  <p>All authentication endpoints. No token required for these requests.</p>
+
+  <h2>POST /api/auth/login</h2>
+  <p>Returns a JWT token. Use the response token for all subsequent requests.</p>
+  <pre><span class="cm">// Request body (Admin)</span>
+{
+  <span class="key">"email"</span>: <span class="str">"admin@hrms.com"</span>,
+  <span class="key">"password"</span>: <span class="str">"Admin@1234"</span>
+}
+
+<span class="cm">// Successful response (200 OK)</span>
+{
+  <span class="key">"token"</span>: <span class="str">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>,
+  <span class="key">"role"</span>:  <span class="str">"ADMIN"</span>,
+  <span class="key">"email"</span>: <span class="str">"admin@hrms.com"</span>
+}</pre>
+  <div class="info-box">After getting the token: copy the value of <code>"token"</code> → open Collection Variables → paste into <code>jwt_token</code> → Save. Login is case-insensitive (e.g. <code>ADMIN@HRMS.COM</code> also works).</div>
+
+  <h2>GET /api/auth/me</h2>
+  <p>Returns the currently authenticated user's profile.</p>
+  <pre><span class="cm">// Response (200 OK)</span>
+{
+  <span class="key">"email"</span>: <span class="str">"admin@hrms.com"</span>,
+  <span class="key">"role"</span>:  <span class="str">"ADMIN"</span>
+}</pre>
+
+  <hr>
+
+  <h1>Folder 2 — Employees</h1>
+  <p>Employee CRUD operations. Requires Admin JWT token unless noted.</p>
+
+  <h2>GET /api/employees</h2>
+  <p>Paginated list of employees. Accessible by ADMIN and HR.</p>
+  <table>
+    <thead><tr><th>Query Param</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>page</code></td><td>int</td><td>0-indexed page number (default: 0)</td></tr>
+      <tr><td><code>size</code></td><td>int</td><td>Results per page (default: 20)</td></tr>
+      <tr><td><code>name</code></td><td>String</td><td>Filter by name (partial match)</td></tr>
+      <tr><td><code>status</code></td><td>String</td><td>ACTIVE or INACTIVE</td></tr>
+      <tr><td><code>userRole</code></td><td>String</td><td>EMPLOYEE, HR, or ADMIN</td></tr>
+      <tr><td><code>departmentId</code></td><td>String</td><td>Filter by department (e.g. DEPT-0001)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>POST /api/employees</h2>
+  <p>Register a new employee. Requires ADMIN.</p>
+  <pre>{
+  <span class="key">"name"</span>:          <span class="str">"Jane Smith"</span>,
+  <span class="key">"email"</span>:         <span class="str">"jane.smith@company.com"</span>,
+  <span class="key">"password"</span>:      <span class="str">"Pass@1234"</span>,
+  <span class="key">"phone"</span>:         <span class="str">"+92-301-0000001"</span>,
+  <span class="key">"gender"</span>:        <span class="str">"FEMALE"</span>,
+  <span class="key">"dateOfBirth"</span>:   <span class="str">"1998-03-12"</span>,
+  <span class="key">"address"</span>:       <span class="str">"456 Park Avenue, Lahore"</span>,
+  <span class="key">"departmentId"</span>:  <span class="str">"DEPT-0001"</span>,
+  <span class="key">"designation"</span>:   <span class="str">"HR Manager"</span>,
+  <span class="key">"dateOfJoining"</span>: <span class="str">"2026-09-01"</span>,
+  <span class="key">"salary"</span>:        <span class="num">70000</span>,
+  <span class="key">"allowances"</span>:    <span class="num">5000</span>,
+  <span class="key">"deductions"</span>:    <span class="num">3000</span>,
+  <span class="key">"employeeType"</span>:  <span class="str">"HR"</span>,
+  <span class="key">"userRole"</span>:      <span class="str">"HR"</span>
+}</pre>
+
+  <h2>GET /api/employees/{employeeId}</h2>
+  <p>Get a single employee by their ID (e.g. <code>EMP-0001</code>). Accessible by ADMIN and HR.</p>
+
+  <h2>PUT /api/employees/{employeeId}</h2>
+  <p>Update an employee's profile. Same request body as POST (all fields optional in update). Requires ADMIN.</p>
+
+  <h2>DELETE /api/employees/{employeeId}</h2>
+  <p>Delete an employee. Also deletes their user account, leave balance, and leave requests. Requires ADMIN.</p>
+  <pre><span class="cm">// Response (200 OK)</span>
+{
+  <span class="key">"message"</span>: <span class="str">"Employee deleted successfully"</span>
+}</pre>
+
+  <h2>GET /api/employees/{employeeId}/history</h2>
+  <p>Get the promotion/designation/notes history for an employee. Accessible by ADMIN, HR, and the employee themselves.</p>
+
+  <h2>POST /api/employees/{employeeId}/notes</h2>
+  <p>Add a performance note. Requires ADMIN.</p>
+  <pre>{
+  <span class="key">"note"</span>: <span class="str">"Excellent performance in Q3 2026"</span>
+}</pre>
+
+  <hr>
+
+  <h1>Folder 3 — Departments</h1>
+  <p>Department management. All require ADMIN.</p>
+
+  <h2>GET /api/departments</h2>
+  <p>List all departments. Accessible by ADMIN and HR.</p>
+
+  <h2>POST /api/departments</h2>
+  <pre>{
+  <span class="key">"name"</span>:        <span class="str">"Engineering"</span>,
+  <span class="key">"description"</span>: <span class="str">"Software development team"</span>,
+  <span class="key">"hrId"</span>:        <span class="str">"EMP-0001"</span>,
+  <span class="key">"managerId"</span>:   <span class="str">"EMP-0002"</span>
+}</pre>
+  <div class="info-box"><strong>Required:</strong> <code>hrId</code> must reference an existing employee with <code>userRole: "HR"</code>. One HR per department — if the employee is already assigned to another department the request will return a 400 error.</div>
+
+  <h2>PUT /api/departments/{departmentId}</h2>
+  <p>Update department details. Same fields as POST, all optional.</p>
+
+  <h2>DELETE /api/departments/{departmentId}</h2>
+  <p>Delete a department. If the department has employees, they must first be reassigned or a <code>targetDepartmentId</code> query param must be provided to move them.</p>
+  <pre>DELETE /api/departments/DEPT-0001?targetDepartmentId=DEPT-0002</pre>
+
+  <hr>
+
+  <h1>Folder 4 — Leave Management</h1>
+
+  <h2>POST /api/leave/apply</h2>
+  <p>Submit a leave request. Accessible by EMPLOYEE and HR.</p>
+  <pre>{
+  <span class="key">"leaveType"</span>: <span class="str">"ANNUAL"</span>,
+  <span class="key">"startDate"</span>: <span class="str">"2026-10-01"</span>,
+  <span class="key">"endDate"</span>:   <span class="str">"2026-10-05"</span>,
+  <span class="key">"reason"</span>:    <span class="str">"Family vacation"</span>
+}</pre>
+  <p>Valid leaveType values: <code>ANNUAL</code> · <code>CASUAL</code> · <code>SICK</code> · <code>UNPAID</code></p>
+
+  <h2>GET /api/leave/my</h2>
+  <p>Get current user's own leave requests. Accessible by EMPLOYEE and HR.</p>
+
+  <h2>GET /api/leave/my-balance</h2>
+  <p>Get current user's remaining leave balances.</p>
+  <pre><span class="cm">// Response (200 OK)</span>
+{
+  <span class="key">"annualLeaves"</span>: <span class="num">18</span>,
+  <span class="key">"casualLeaves"</span>: <span class="num">10</span>,
+  <span class="key">"sickLeaves"</span>:   <span class="num">8</span>,
+  <span class="key">"unpaidLeaves"</span>: <span class="num">5</span>
+}</pre>
+
+  <h2>GET /api/leave/all</h2>
+  <p>All leave requests org-wide. ADMIN only. Supports query params: <code>status</code>, <code>departmentId</code>.</p>
+
+  <h2>GET /api/leave/department</h2>
+  <p>Leave requests for the HR's own department. HR only — automatically scoped to their department by the backend.</p>
+
+  <h2>POST /api/leave/{leaveId}/approve</h2>
+  <p>Approve a pending leave request. HR only.</p>
+  <pre>POST /api/leave/LVE-0001/approve
+<span class="cm">// No request body required
+// Response (200 OK): { "message": "Leave approved" }</span></pre>
+
+  <h2>POST /api/leave/{leaveId}/reject</h2>
+  <p>Reject a pending leave request. HR only.</p>
+
+  <h2>GET /api/leave/balances</h2>
+  <p>Look up leave balances for all employees (with optional name filter). ADMIN and HR only.</p>
+  <pre>GET /api/leave/balances?name=john</pre>
+
+  <hr>
+
+  <h1>Folder 5 — Payroll</h1>
+
+  <h2>POST /api/payroll/generate</h2>
+  <p>Generate a monthly payroll record for an employee. HR only — only employees in the HR's department are accepted.</p>
+  <pre>{
+  <span class="key">"employeeId"</span>: <span class="str">"EMP-0001"</span>,
+  <span class="key">"month"</span>:      <span class="num">9</span>,
+  <span class="key">"year"</span>:       <span class="num">2026</span>
+}</pre>
+  <p>Returns 400 if payroll already exists for that employee/month/year combination.</p>
+
+  <h2>PUT /api/payroll/{payrollId}/status</h2>
+  <p>Mark a payroll record as PAID or UNPAID. HR only.</p>
+  <pre>{
+  <span class="key">"paymentStatus"</span>: <span class="str">"PAID"</span>
+}</pre>
+
+  <h2>GET /api/payroll/all</h2>
+  <p>All payroll records org-wide. ADMIN only. Supports query params: <code>month</code>, <code>year</code>, <code>departmentId</code>, <code>paymentStatus</code>.</p>
+
+  <h2>GET /api/payroll/department</h2>
+  <p>Payroll records for the HR's department. HR only — auto-scoped by backend.</p>
+
+  <h2>GET /api/payroll/my</h2>
+  <p>Current user's own payroll history. Accessible by EMPLOYEE, HR, and ADMIN.</p>
+
+  <hr>
+
+  <h1>Status Code Reference</h1>
+  <table>
+    <thead><tr><th>Code</th><th>Meaning</th><th>Common Cause</th></tr></thead>
+    <tbody>
+      <tr><td>200 OK</td><td>Success</td><td>GET, PUT, DELETE succeeded</td></tr>
+      <tr><td>201 Created</td><td>Resource created</td><td>POST (register, apply, generate)</td></tr>
+      <tr><td>400 Bad Request</td><td>Validation error</td><td>Missing required field, duplicate, insufficient balance</td></tr>
+      <tr><td>401 Unauthorized</td><td>Not authenticated</td><td>Missing or expired JWT token</td></tr>
+      <tr><td>403 Forbidden</td><td>Not authorized</td><td>Role does not have permission for this endpoint</td></tr>
+      <tr><td>404 Not Found</td><td>Resource missing</td><td>Invalid employeeId, leaveId, payrollId, etc.</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Authentication Header</h1>
+  <p>Every request (except login) must include the <code>Authorization</code> header:</p>
+  <pre>Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
+  <p>The collection handles this automatically — once you set <code>jwt_token</code> in collection variables, the header is injected into every request via the collection's pre-request script.</p>
+
+  <p style="margin-top:40px; text-align:center; color:#94a3b8; font-size:9pt; border-top:1px solid #e2e8f0; padding-top:16px;">
+    HR Management System · Postman Collection Guide · Stella Technology Internship Project, 2026 · Hassan Raheem
+  </p>
+
+</div>
+</body>
+</html>

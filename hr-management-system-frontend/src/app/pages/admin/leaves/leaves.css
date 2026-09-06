@@ -159,3 +159,54 @@
 .bal-item { display: flex; flex-direction: column; gap: .15rem; }
 .bal-label { font-size: .7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; }
 .bal-val { font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+
+/* ── Top tabs ── */
+.top-tabs {
+  display: flex; gap: .5rem; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0;
+}
+.top-tab {
+  padding: .6rem 1.25rem; border: none; background: none; cursor: pointer;
+  font-size: .9rem; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  border-radius: 0; font-weight: 500; transition: color .15s, border-color .15s;
+  display: flex; align-items: center; gap: .45rem;
+}
+.top-tab.active { color: #6366f1; border-bottom-color: #6366f1; font-weight: 600; }
+.top-tab:hover:not(.active) { color: #334155; }
+
+.tab-badge {
+  background: #ef4444; color: #fff; font-size: .68rem; font-weight: 700;
+  border-radius: 999px; padding: .1rem .4rem; min-width: 18px; text-align: center;
+}
+
+/* ── HR Leave Approvals ── */
+.hr-approvals-header { margin-bottom: 1rem; }
+.hr-approvals-desc { color: #64748b; font-size: .87rem; }
+
+.hr-badge-inline {
+  display: inline-block; background: #e0e7ff; color: #4338ca;
+  font-size: .68rem; font-weight: 700; border-radius: 4px;
+  padding: .1rem .4rem; margin-left: .35rem; vertical-align: middle;
+}
+
+/* ── Action buttons (used in admin HR approvals) ── */
+.leave-actions { display: flex; gap: .5rem; margin-top: .5rem; }
+.btn-approve {
+  flex: 1; padding: .45rem; border: none; border-radius: 6px;
+  background: #dcfce7; color: #15803d; font-size: .82rem; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .3rem;
+  transition: background .15s;
+}
+.btn-approve:hover:not(:disabled) { background: #bbf7d0; }
+.btn-approve:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn-reject {
+  flex: 1; padding: .45rem; border: none; border-radius: 6px;
+  background: #fee2e2; color: #b91c1c; font-size: .82rem; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .3rem;
+  transition: background .15s;
+}
+.btn-reject:hover:not(:disabled) { background: #fecaca; }
+.btn-reject:disabled { opacity: .5; cursor: not-allowed; }
+
+.spin-sm { width: 12px; height: 12px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

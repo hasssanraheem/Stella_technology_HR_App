@@ -1,0 +1,97 @@
+// HR Management System — MongoDB Schema
+// Generated from @Document entity classes
+// Import at: https://dbdiagram.io → Import → DBML
+
+Table users {
+  id       string [pk, note: 'MongoDB ObjectId (_id)']
+  email    string [unique, note: 'Indexed unique. Case-insensitive login enforced at service layer']
+  password string [note: 'BCrypt-hashed. Min 8 chars, requires upper, lower, digit']
+  role     string [note: 'Enum: ADMIN | HR | EMPLOYEE']
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table employees {
+  id           string [pk, note: 'MongoDB ObjectId (_id)']
+  employeeId   string [unique, note: 'Business key, e.g. EMP-0001']
+  name         string
+  email        string [unique, ref: > users.email]
+  phone        string
+  gender       string
+  dateOfBirth  date
+  address      string
+  departmentId string [ref: > departments.departmentId, note: 'Null/DEPT-0000 = Unassigned']
+  designation  string
+  dateOfJoining date
+  salary       number
+  allowances   number [note: 'Default: 0.0']
+  deductions   number [note: 'Default: 0.0']
+  status       string [note: 'Enum: ACTIVE | INACTIVE. Default: ACTIVE']
+  userRole     string [note: 'Enum: ADMIN | HR | EMPLOYEE. Controls route access']
+  employeeType string [note: 'Enum: EMPLOYEE | MANAGER | HR. Default: EMPLOYEE']
+  createdAt    datetime
+  updatedAt    datetime
+}
+
+Table departments {
+  id           string [pk, note: 'MongoDB ObjectId (_id)']
+  departmentId string [unique, note: 'Business key, e.g. DEPT-0001']
+  name         string [unique]
+  description  string
+  managerId    string [ref: > employees.employeeId, note: 'Optional. Must be MANAGER-type employee']
+  hrId         string [ref: > employees.employeeId, note: 'Required. Must be HR-type employee. One HR per department']
+  isSystem     boolean [note: 'True for the Unassigned system department (DEPT-0000)']
+  createdAt    datetime
+  updatedAt    datetime
+}
+
+Table leave_requests {
+  id         string [pk, note: 'MongoDB ObjectId (_id)']
+  leaveId    string [unique, note: 'Business key, e.g. LVE-0001']
+  employeeId string [ref: > employees.employeeId]
+  leaveType  string [note: 'Enum: ANNUAL | CASUAL | SICK | UNPAID']
+  startDate  date
+  endDate    date
+  reason     string
+  status     string [note: 'Enum: PENDING | APPROVED | REJECTED. Default: PENDING']
+  appliedAt  datetime
+  updatedAt  datetime
+}
+
+Table leave_balances {
+  id           string [pk, note: 'MongoDB ObjectId (_id)']
+  employeeId   string [unique, ref: > employees.employeeId, note: '1-to-1 with employees. Auto-created on employee registration']
+  annualLeaves int [note: 'Default: 20. Decremented on approval']
+  casualLeaves int [note: 'Default: 10. Decremented on approval']
+  sickLeaves   int [note: 'Default: 15. Decremented on approval']
+  unpaidLeaves int [note: 'Default: 30. Decremented on approval']
+  createdAt    datetime
+  updatedAt    datetime
+}
+
+Table payroll {
+  id            string [pk, note: 'MongoDB ObjectId (_id)']
+  payrollId     string [unique, note: 'Business key, e.g. PAY-0001']
+  employeeId    string [ref: > employees.employeeId, note: 'Compound unique index: (employeeId, month, year)']
+  month         int [note: '1–12']
+  year          int
+  basicSalary   number
+  allowances    number
+  deductions    number
+  netSalary     number [note: 'Computed: basicSalary + allowances - deductions']
+  paymentStatus string [note: 'Enum: PAID | UNPAID. Default: UNPAID']
+  generatedAt   datetime
+  updatedAt     datetime
+}
+
+Table employee_history {
+  id            string [pk, note: 'MongoDB ObjectId (_id)']
+  historyId     string [unique, note: 'Business key, e.g. HIST-0001']
+  employeeId    string [ref: > employees.employeeId, note: 'Indexed (non-unique)']
+  type          string [note: 'Enum: PROMOTION | DESIGNATION_CHANGE | PERFORMANCE_NOTE']
+  previousValue string [note: 'Null for PERFORMANCE_NOTE records']
+  newValue      string [note: 'Null for PERFORMANCE_NOTE records']
+  note          string [note: 'Populated only for PERFORMANCE_NOTE type']
+  recordedBy    string [note: 'employeeId of the admin who made the change']
+  recordedAt    datetime
+}

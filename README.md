@@ -1,23 +1,28 @@
 # Stella Technology — HR Management System
 
-A full-stack Human Resources Management System built as an internship project at Stella Technology. The system covers employee lifecycle management, department administration, leave tracking, payroll generation, and employee history.
+A full-stack Human Resources Management System built as an internship project at Stella Technology. The system covers employee lifecycle management, department administration, leave tracking, payroll generation, and employee history — across three distinct user roles.
 
 ---
 
 ## What is this application?
 
-This is a role-based HR Management System that gives three types of users a tailored experience:
+**Admin** manages the entire organisation — registers employees, creates departments (each must have a dedicated HR assigned), oversees all leave requests (including a dedicated **HR Leave Approvals** tab to approve or reject leave submitted by HR employees), and monitors all payroll history across every department.
 
-**Admin** manages the entire organisation — they register employees, create departments (each must have a dedicated HR assigned), oversee all leave requests (read-only view), and monitor all payroll history across every department. Admins control the structure; they do not process leave approvals or run payroll.
+**HR** manages day-to-day people operations for their assigned department only. HR can approve or reject leave requests for their department's employees (regular employees only — not other HR staff). HR can also apply for their own leave through the **My Leave** tab; those requests go to Admin for approval. HR also generates monthly payroll and marks salaries as paid.
 
-**HR** manages day-to-day people operations for their assigned department only. After logging in, HR lands on a dedicated HR Dashboard where they can approve or reject leave requests for their department's employees, generate monthly payroll, and mark salaries as paid or unpaid. All data is automatically scoped to their department — they cannot see or affect other departments.
+**Employee** has a personal dashboard to apply for leave (Annual, Casual, Sick, or Unpaid), track request status, check leave balance, and view payroll history.
 
-**Employee** has a personal dashboard where they can apply for leave (Annual, Casual, Sick, or Unpaid), track the status of their requests, check their remaining leave balance, and view their payroll history.
+### Leave approval chain
+
+| Who submits | Approved by |
+|---|---|
+| Employee | HR (their department's HR) |
+| HR employee | Admin |
 
 ### Key workflow
 
 1. Admin registers HR employees first (no department needed at this stage).
-2. Admin creates departments — each department must have an HR person assigned before it can be saved.
+2. Admin creates departments — each must have an HR person assigned before it can be saved.
 3. Admin registers regular employees and assigns them to departments.
 4. HR logs in and manages leaves and payroll for their department.
 5. Employees log in to apply for leave and view their records.
@@ -36,7 +41,8 @@ This is a role-based HR Management System that gives three types of users a tail
 8. [API Reference](#api-reference)
 9. [Roles & Permissions](#roles--permissions)
 10. [Database Collections](#database-collections)
-11. [Default Admin Account](#default-admin-account)
+11. [Submission Files](#submission-files)
+12. [Default Admin Account](#default-admin-account)
 
 ---
 
@@ -57,13 +63,13 @@ This is a role-based HR Management System that gives three types of users a tail
 ```
 Stella_Technology_Final_Project/
 │
-├── demo/                          ← Spring Boot backend
-│   ├── src/main/java/com/HR_Managment_System/demo/
+├── backend/                       ← Spring Boot backend
+│   ├── src/main/java/com/HR_Managnet_System/demo/
 │   │   ├── config/                ← SecurityConfig, DataInitializer
-│   │   ├── controller/            ← REST controllers (Auth, Employee, Department, Leave, Payroll)
-│   │   ├── dto/                   ← Request/Response data transfer objects
-│   │   ├── entity/                ← MongoDB document entities
-│   │   ├── enums/                 ← Role, LeaveType, LeaveStatus, EmployeeType, PaymentStatus, etc.
+│   │   ├── controller/            ← Auth, Employee, Department, Leave, Payroll
+│   │   ├── dto/                   ← Request / Response DTOs
+│   │   ├── entity/                ← MongoDB @Document entities
+│   │   ├── enums/                 ← Role, LeaveType, LeaveStatus, EmployeeType, PaymentStatus, HistoryType
 │   │   ├── exception/             ← Typed exceptions + GlobalExceptionHandler
 │   │   ├── mapper/                ← Entity ↔ DTO converters
 │   │   ├── repository/            ← Spring Data MongoDB repositories
@@ -77,25 +83,32 @@ Stella_Technology_Final_Project/
 │   └── src/app/
 │       ├── core/
 │       │   ├── guards/            ← authGuard, adminGuard, hrGuard
-│       │   ├── interceptors/      ← JWT interceptor (auto-attaches token)
+│       │   ├── interceptors/      ← JWT interceptor (auto-attaches Bearer token)
 │       │   └── services/          ← AuthService, EmployeeService, DepartmentService,
 │       │                             LeaveService, PayrollService
 │       └── pages/
-│           ├── login/             ← Login page (shared by all roles)
+│           ├── login/             ← Shared login page
 │           ├── dashboard/         ← Employee self-service dashboard
 │           ├── admin/
-│           │   ├── layout/        ← Admin sidebar layout shell
-│           │   ├── employees/     ← CRUD + type filters + promote + notes + history
-│           │   ├── departments/   ← CRUD + mandatory HR + manager assignment + reassign
-│           │   ├── leaves/        ← View-only leave list + department filter + balance lookup
-│           │   └── payroll/       ← View-only payroll history + department filter
+│           │   ├── layout/        ← Admin sidebar shell
+│           │   ├── employees/     ← CRUD, type change, performance notes, history
+│           │   ├── departments/   ← CRUD, HR assignment, manager, reassign employees
+│           │   ├── leaves/        ← Employee Leaves tab (read-only) + HR Leave Approvals tab
+│           │   └── payroll/       ← Org-wide payroll view
 │           └── hr/
-│               ├── layout/        ← HR sidebar layout shell
-│               ├── leaves/        ← Approve/reject leaves for own department
-│               └── payroll/       ← Generate + mark paid payroll for own department
+│               ├── layout/        ← HR sidebar shell
+│               ├── leaves/        ← Department Approvals tab + My Leave tab (apply & history)
+│               └── payroll/       ← Generate + mark paid/unpaid for own department
 │
+├── submission/                    ← Project documentation & API specs
+│   ├── openapi.yaml               ← OpenAPI 3.0.3 specification (import into Swagger UI or Postman)
+│   ├── postman_collection.json    ← Role-based Postman collection (Auth, Admin, HR, Employee)
+│   ├── schema.dbml                ← DBML schema for dbdiagram.io
+│   ├── mongodb_schema.md          ← MongoDB collections reference
+│   └── pdf_html/                  ← Source HTML for documentation PDFs
+│
+├── .env.example                   ← Copy to backend/.env before running
 ├── .gitignore
-├── .env.example                   ← Copy this to demo/.env before running
 └── README.md
 ```
 
@@ -104,80 +117,69 @@ Stella_Technology_Final_Project/
 ## Features
 
 ### Module 1 — Authentication
-- JWT-based stateless authentication
-- Roles: `ADMIN`, `HR`, `EMPLOYEE`
-- Case-insensitive email login (e.g. `ADMIN@HRMS.COM` = `admin@hrms.com`)
+- JWT-based stateless authentication (24-hour token expiry)
+- Three roles: `ADMIN`, `HR`, `EMPLOYEE`
+- Case-insensitive email login (`ADMIN@HRMS.COM` = `admin@hrms.com`)
+- `GET /api/auth/me` returns the logged-in user's email and role
 - Role-based route guards on the frontend (`authGuard`, `adminGuard`, `hrGuard`)
 - `@PreAuthorize` annotations enforce role rules on every backend endpoint
 - Default admin account auto-seeded on first startup
 
 ### Module 2 — Employee Management (Admin)
-- Register employee: creates login credentials and employee profile in one flow
+- Register employee: creates login credentials and employee profile in one step
 - Employee types: `EMPLOYEE`, `MANAGER`, `HR`
-- HR employees can be registered without a department — they are held in the system Unassigned bucket (DEPT-0000) until a department is created for them
-- Update employee details (name, phone, designation, salary, allowances, deductions, etc.)
-- Change employee type — triggers an automatic promotion record in the history log
-- Delete employee with instant list refresh
-- Search employees by name (paginated)
+- HR employees can be registered without a department — held in the Unassigned bucket (DEPT-0000) until a department is created for them
+- Partial updates: all fields optional on `PUT /api/employees/{id}` — send only what changes
+- Change employee type (PATCH) — triggers automatic history record
+- Delete employee — also removes user account, leave balance, and leave history
+- Paginated employee list with filters: name, status, userRole, departmentId
 - Filter pills: All / Employee / Manager / HR
-- Unassigned employees banner warns the admin when staff have no department
+- Unassigned employees banner alerts admin when staff have no department
 
 ### Module 3 — Department Management (Admin)
 - Create / update / delete departments
-- **Every department requires a mandatory HR assignment** — cannot be saved without selecting an HR employee
+- Every department requires a mandatory HR assignment — cannot be saved without one
 - Validation prevents assigning the same HR to more than one department
-- Assign a manager from existing MANAGER-type employees
-- Departments table shows both Manager name and HR name columns
-- Delete with employee reassignment: if a department has employees, admin must move them to another department or the Unassigned holding bucket before deletion
-- Reassign button on the Unassigned system department lets admin bulk-move unassigned employees
-- Search departments by name
+- Optional manager assignment (MANAGER-type employees only)
+- Departments table shows Manager name and HR name columns
+- Delete with employee reassignment — move staff to another department or Unassigned before deletion
+- Reassign all employees endpoint: `PUT /api/departments/{id}/reassign-employees`
 
 ### Module 4 — Leave Management
 
-**Admin view (read-only)**
-- See all leave requests across the entire organisation
-- Filter by status (All / Pending / Approved / Rejected)
-- Filter by department
-- Search by employee name
-- Each leave card shows: employee name, department, HR name, dates, leave type, reason, and status
-- Leave Balance Lookup: load all employees and filter by name to check remaining balances
+**Admin view**
+- **Employee Leaves tab**: view all employee (non-HR) leave requests org-wide — filter by status and department
+- **HR Leave Approvals tab**: view leave requests submitted by HR employees with Approve / Reject buttons and a red badge showing the pending count
+- Leave Balance Lookup: check remaining balances for all employees
 
-**HR view (department-scoped)**
-- Automatically sees only leave requests for employees in their own department
-- Approve or reject pending leave requests
-- Leave Balance Lookup: load all employees in their department
-- Data is scoped server-side — HR cannot see other departments' data
+**HR view**
+- **Department Approvals tab**: approve or reject pending leave requests for their department's employees (non-HR only — backend returns 403 if HR tries to action another HR's leave)
+- **My Leave tab**: apply for own leave (Annual / Casual / Sick / Unpaid); own leave history and balance displayed; HR leaves are sent to Admin for approval
+- Leave Balance Lookup: check balances for employees in their department
 
 **Employee view**
-- Apply for leave (Annual / Casual / Sick / Unpaid)
-- Choose start and end dates with an end-after-start validation
-- Add a reason
-- View own leave history and current leave balance
+- Apply for leave with start/end dates and optional reason
+- View own leave history and current balance
 
 Leave balances are auto-decremented when a request is approved. Only PENDING requests can be actioned.
 
 ### Module 5 — Payroll Management
 
-**Admin view (read-only)**
-- View all payroll records across the organisation
-- Filter by month, year, payment status, and department
-- Cannot generate payroll or change payment status
+**HR** generates monthly payroll for department employees; marks records as PAID / UNPAID.
+Net salary = `Basic Salary + Allowances − Deductions`.
+Data is auto-scoped to the HR's own department server-side.
 
-**HR view (department-scoped)**
-- Generate payroll for any employee in their department for a chosen month/year — the employee dropdown only shows department members
-- Net salary auto-calculated: `Basic Salary + Allowances − Deductions`
-- Mark payroll as PAID / UNPAID
-- Filter by month, year, and payment status
-- Data is scoped server-side — HR cannot see or generate payroll for other departments
+**Admin** views all payroll records org-wide (read-only), filterable by month, year, status, and department.
 
-**Employee view**
-- View own payroll history with net salary and payment status
+**Employee** views own payroll history with net salary breakdown.
+
+Duplicate prevention: 400 error if payroll already exists for that employee / month / year.
 
 ### Module 6 — Employee History & Records
-- Automatic promotion record when employee type changes
-- Automatic designation change record when designation is updated
-- Admin can add free-text performance notes to any employee
-- Full timeline viewable per employee, filterable by record type
+- Automatic record when employee type changes (PROMOTION)
+- Automatic record when designation is updated (DESIGNATION_CHANGE)
+- Admin adds free-text performance notes (PERFORMANCE_NOTE)
+- Full history timeline per employee, filterable by record type
 
 ---
 
@@ -195,33 +197,28 @@ Spring Boot REST API  (port 8080)
     │
     ├── Controllers → Services → Repositories
     │     └── HR role auto-scoped to own department
-    │          (detected via Authentication object, no extra token claims needed)
+    │          (backend reads authentication.getName() → looks up departmentId)
     │
     └── MongoDB  (port 27017)
-          ├── users
-          ├── employees
-          ├── departments
-          ├── leave_requests
-          ├── leave_balances
-          ├── payroll
-          └── employee_history
+          ├── users              ├── leave_requests
+          ├── employees          ├── leave_balances
+          ├── departments        ├── payroll
+                                 └── employee_history
 ```
 
-**How JWT works in this project:**
-1. User logs in with email + password → backend returns a JWT token
+**JWT flow:**
+1. User logs in → backend returns a signed JWT (24 h expiry)
 2. Angular stores the token in `localStorage`
-3. A global HTTP interceptor automatically attaches `Authorization: Bearer <token>` to every outgoing request
-4. The `JwtAuthFilter` on the backend validates the token and sets the Spring Security context
-5. `@PreAuthorize` annotations on controller methods enforce role-based access
-6. For HR-scoped endpoints, the backend reads `authentication.getName()` (the HR's email) to look up their `departmentId` and filter data accordingly
+3. Global HTTP interceptor attaches `Authorization: Bearer <token>` to every request
+4. `JwtAuthFilter` validates the token and sets the Spring Security context
+5. `@PreAuthorize` annotations enforce role-based access per endpoint
+6. For HR-scoped endpoints the backend reads the HR's email from the JWT, looks up their `departmentId`, and filters results accordingly
 
 ---
 
 ## Prerequisites
 
-Make sure the following are installed on your machine before you start:
-
-| Tool | Minimum Version | How to check |
+| Tool | Minimum Version | Check |
 |---|---|---|
 | Java (JDK) | 21 | `java -version` |
 | Maven | 3.9+ | `mvn -v` (or use `./mvnw`) |
@@ -233,8 +230,6 @@ Make sure the following are installed on your machine before you start:
 
 ## Setup & Running Locally
 
-Follow these steps in order. Open a separate terminal for each server.
-
 ### Step 1 — Clone the repository
 
 ```bash
@@ -244,33 +239,28 @@ cd Stella_technology_HR_App
 
 ### Step 2 — Start MongoDB
 
-MongoDB must be running before the backend starts.
-
 ```bash
 # macOS (Homebrew)
 brew services start mongodb-community
 
 # Linux
 sudo systemctl start mongod
-
-# Windows — start MongoDB from Services or run:
-mongod
 ```
 
-Verify MongoDB is running:
+Verify:
 ```bash
 mongosh --eval "db.runCommand({ ping: 1 })"
-# Expected output: { ok: 1 }
+# Expected: { ok: 1 }
 ```
 
-### Step 3 — Configure the backend environment
+### Step 3 — Configure the backend
 
 ```bash
-cd demo
+cd backend
 cp ../.env.example .env
 ```
 
-Open `demo/.env` and fill in your values:
+Edit `backend/.env`:
 
 ```env
 MONGO_URI=mongodb://localhost:27017/hr_management_db
@@ -278,16 +268,15 @@ JWT_SECRET=your_long_random_secret_at_least_32_hex_characters
 JWT_EXPIRATION=86400000
 ```
 
-> **How to generate a JWT secret:**
-> ```bash
-> openssl rand -hex 32
-> ```
+Generate a secure secret:
+```bash
+openssl rand -hex 32
+```
 
 ### Step 4 — Run the backend
 
 ```bash
-# From inside the demo/ directory
-cd demo
+# From inside the backend/ directory
 
 # macOS / Linux
 set -a && source .env && set +a
@@ -298,49 +287,40 @@ $env:JWT_SECRET="your_secret"; $env:MONGO_URI="mongodb://localhost:27017/hr_mana
 .\mvnw.cmd spring-boot:run
 ```
 
-The backend starts on **http://localhost:8080**
+Backend starts on **http://localhost:8080**
 
-On first startup, the system automatically creates:
-- A default admin account
-- A system "Unassigned" department (DEPT-0000) used as a holding bucket for employees without a department
-
-You will see this in the console:
-```
-Default admin created — email: admin@hrms.com | password: Admin@1234
-System department 'Unassigned' (DEPT-0000) created.
-```
+On first startup the system seeds:
+- Default admin account (`admin@hrms.com` / `Admin@1234`)
+- System "Unassigned" department (DEPT-0000)
 
 ### Step 5 — Run the frontend
 
-Open a **new terminal window**:
+Open a **new terminal**:
 
 ```bash
 cd hr-management-system-frontend
-npm install          # only needed on first run
-ng serve             # or: npx ng serve
+npm install       # first time only
+ng serve
 ```
 
-The frontend starts on **http://localhost:4200**
+Frontend starts on **http://localhost:4200**
 
-### Step 6 — Open the app
+### Step 6 — Log in
 
-Go to **http://localhost:4200** in your browser. You will be redirected to the login page.
-
-Use the default admin credentials:
+Open **http://localhost:4200** and log in with:
 
 ```
 Email:    admin@hrms.com
 Password: Admin@1234
 ```
 
-### Recommended first-run setup order
+### Recommended first-run order
 
-1. Log in as **Admin**
-2. Go to **Employees** → register one or more HR users (role: HR, no department needed)
-3. Go to **Departments** → create a department and assign one of the HR users to it
-4. Go to **Employees** → register regular employees and assign them to the department
-5. Log out → log in as the **HR** user to manage leaves and payroll for that department
-6. Log out → log in as an **Employee** to apply for leave and view payroll
+1. Log in as **Admin** → register one or more HR employees (role: HR, no department needed)
+2. **Departments** → create a department, assign one of the HR users
+3. **Employees** → register regular employees, assign to the department
+4. Log out → log in as **HR** to manage leaves and payroll
+5. Log out → log in as **Employee** to apply for leave and view payroll
 
 ---
 
@@ -349,68 +329,73 @@ Password: Admin@1234
 | Variable | Description | Default |
 |---|---|---|
 | `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/hr_management_db` |
-| `JWT_SECRET` | Secret key used to sign/verify JWT tokens | **required — no default** |
-| `JWT_EXPIRATION` | Token lifetime in milliseconds | `86400000` (24 hours) |
+| `JWT_SECRET` | Secret key for signing/verifying JWT tokens | **required — no default** |
+| `JWT_EXPIRATION` | Token lifetime in milliseconds | `86400000` (24 h) |
 
-> **Security note:** Never commit your `.env` file or put the real `JWT_SECRET` in `application.yml`. The `.env` file is listed in `.gitignore` and will not be pushed to GitHub.
+> **Security:** Never commit `backend/.env`. The file is in `.gitignore`. `application.yml` references secrets as `${JWT_SECRET}` — no hardcoded values.
 
 ---
 
 ## API Reference
 
-All protected endpoints require the header:
+All protected endpoints require:
 ```
-Authorization: Bearer <your_jwt_token>
+Authorization: Bearer <jwt_token>
 ```
 
-### Auth
-| Method | URL | Access | Description |
+### Authentication
+
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/auth/login` | Public | Login, returns JWT. Email is case-insensitive. |
-| `POST` | `/api/auth/register` | ADMIN | Create a login account (EMPLOYEE, HR) |
+| `POST` | `/api/auth/login` | None | Login — returns JWT token. Email is case-insensitive. |
+| `POST` | `/api/auth/register` | ADMIN | Create a standalone user account |
+| `GET` | `/api/auth/me` | Any | Returns `{email, role}` of the logged-in user |
 
 ### Employees
-| Method | URL | Access | Description |
+
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/employees` | ADMIN | Create employee profile |
-| `GET` | `/api/employees` | ADMIN, HR | List employees (paginated, filterable by `?name=`, `?departmentId=`, `?status=`, `?userRole=`) |
-| `GET` | `/api/employees/me` | All roles | Get own profile from JWT |
-| `GET` | `/api/employees/{id}` | All roles | Get employee by ID |
-| `PUT` | `/api/employees/{id}` | ADMIN | Update employee details |
-| `DELETE` | `/api/employees/{id}` | ADMIN | Delete employee |
-| `PATCH` | `/api/employees/{id}/type` | ADMIN | Change employee type (EMPLOYEE / MANAGER / HR) |
-| `POST` | `/api/employees/{id}/performance-notes` | ADMIN | Add a performance note |
-| `GET` | `/api/employees/{id}/history` | All roles | View history (`?type=PROMOTION\|DESIGNATION_CHANGE\|PERFORMANCE_NOTE`) |
+| `GET` | `/api/employees/me` | Any | Own profile from JWT |
+| `POST` | `/api/employees` | ADMIN | Register employee (creates profile + login account) |
+| `GET` | `/api/employees` | ADMIN, HR | Paginated list — HR auto-scoped to their dept. Query: `page`, `size`, `name`, `departmentId`, `status`, `userRole` |
+| `GET` | `/api/employees/{id}` | Any | Get employee by ID |
+| `PUT` | `/api/employees/{id}` | ADMIN | Partial update — all fields optional |
+| `PATCH` | `/api/employees/{id}/type` | ADMIN | Change type (`?employeeType=MANAGER`) — auto-creates history record |
+| `POST` | `/api/employees/{id}/performance-notes` | ADMIN | Add performance note |
+| `GET` | `/api/employees/{id}/history` | Any | History records. Query: `type` (PROMOTION \| DESIGNATION_CHANGE \| PERFORMANCE_NOTE) |
+| `GET` | `/api/employees/{id}/leaves` | Any | Employee's own leave history |
+| `GET` | `/api/employees/{id}/payroll` | Any | Employee's payroll records |
+| `DELETE` | `/api/employees/{id}` | ADMIN | Delete employee + user account + leave data |
 
 ### Departments
-| Method | URL | Access | Description |
+
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `POST` | `/api/departments` | ADMIN | Create department (requires `hrId`) |
-| `GET` | `/api/departments` | All roles | List all departments |
-| `GET` | `/api/departments/{id}` | All roles | Get department by ID |
-| `PUT` | `/api/departments/{id}` | ADMIN | Update department |
-| `DELETE` | `/api/departments/{id}` | ADMIN | Delete department (with optional `?reassignTo=` param) |
-| `GET` | `/api/departments/search?name=` | All roles | Search by name |
-| `GET` | `/api/departments/{id}/employee-count` | ADMIN | Count employees in a department |
-| `PUT` | `/api/departments/{id}/reassign-all` | ADMIN | Bulk-move all employees to another department |
+| `GET` | `/api/departments` | ADMIN, HR | List all. Query: `name` (search) |
+| `GET` | `/api/departments/{id}` | ADMIN, HR | Get by ID |
+| `PUT` | `/api/departments/{id}` | ADMIN | Partial update |
+| `PUT` | `/api/departments/{id}/reassign-employees` | ADMIN | Move all employees to `?targetDepartmentId=` |
+| `GET` | `/api/departments/{id}/employee-count` | ADMIN | Count employees in dept |
+| `DELETE` | `/api/departments/{id}` | ADMIN | Delete dept. Query: `targetDepartmentId` (optional) |
 
 ### Leave Requests
-| Method | URL | Access | Description |
+
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/leaves` | EMPLOYEE, HR | Apply for leave |
-| `GET` | `/api/leaves/employees/{id}` | All roles | Get leave requests for a specific employee |
-| `GET` | `/api/leaves` | ADMIN, HR | All leave requests; auto-scoped to department for HR (`?status=`) |
-| `PUT` | `/api/leaves/{id}/status` | HR only | Approve or reject a leave request |
-| `GET` | `/api/leaves/balance/{employeeId}` | All roles | Get leave balance for an employee |
-| `GET` | `/api/leaves/balance` | ADMIN, HR | All leave balances (HR: dept-scoped) |
+| `POST` | `/api/leaves` | Any | Apply for leave. `employeeId` derived from JWT automatically. |
+| `GET` | `/api/leaves` | ADMIN, HR | All leaves (ADMIN) or dept leaves (HR auto-scoped). Query: `status` |
+| `PUT` | `/api/leaves/{id}/status` | ADMIN, HR | Approve/reject leave. **ADMIN**: any leave including HR employees'. **HR**: employee leaves only — returns 403 for HR employees' leaves. |
+| `GET` | `/api/leaves/balance` | ADMIN, HR | Leave balances. ADMIN: all employees (query: `name`). HR: dept-scoped. |
+| `GET` | `/api/leaves/balance/{employeeId}` | Any | Balance for one employee |
 
 ### Payroll
-| Method | URL | Access | Description |
+
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/payroll/generate` | HR only | Generate payroll for an employee |
-| `GET` | `/api/payroll` | ADMIN, HR | All payroll records; auto-scoped to dept for HR (`?month=&year=&status=`) |
-| `GET` | `/api/payroll/employees/{id}` | All roles | Payroll records for a specific employee |
-| `PATCH` | `/api/payroll/{id}/status` | HR only | Mark payroll PAID or UNPAID |
+| `POST` | `/api/payroll/generate` | HR | Generate payroll for a dept employee. Body: `{employeeId, month, year}` |
+| `GET` | `/api/payroll` | ADMIN, HR | All records (ADMIN) or dept records (HR auto-scoped). Query: `month`, `year`, `status` |
+| `PATCH` | `/api/payroll/{id}/status` | HR | Mark PAID or UNPAID. Query: `?status=PAID` |
 
 ---
 
@@ -421,19 +406,20 @@ Authorization: Bearer <your_jwt_token>
 | Register / Edit / Delete employee | ✅ | ❌ | ❌ |
 | Create / Edit / Delete department | ✅ | ❌ | ❌ |
 | Assign HR and manager to department | ✅ | ❌ | ❌ |
-| View all employees (org-wide) | ✅ | ✅ | ❌ |
+| View all employees (org-wide) | ✅ | ✅ (dept only) | ❌ |
 | View own profile | ✅ | ✅ | ✅ |
 | Apply for leave | ❌ | ✅ | ✅ |
-| View own leave history | ✅ | ✅ | ✅ |
+| View own leave history & balance | ✅ | ✅ | ✅ |
 | View all leaves (org-wide) | ✅ | ❌ | ❌ |
 | View department leaves | ❌ | ✅ | ❌ |
-| Approve / reject leave | ❌ | ✅ (dept only) | ❌ |
+| Approve / reject employee leaves | ❌ | ✅ (dept only) | ❌ |
+| Approve / reject HR employees' leaves | ✅ | ❌ | ❌ |
 | Generate payroll | ❌ | ✅ (dept only) | ❌ |
 | Mark payroll paid / unpaid | ❌ | ✅ (dept only) | ❌ |
 | View all payroll (org-wide) | ✅ | ❌ | ❌ |
 | View department payroll | ❌ | ✅ | ❌ |
 | View own payroll | ✅ | ✅ | ✅ |
-| Leave balance lookup (all employees) | ✅ | ✅ (dept only) | ❌ |
+| Leave balance lookup | ✅ (all) | ✅ (dept only) | ❌ |
 | Add performance note | ✅ | ❌ | ❌ |
 | Change employee type | ✅ | ❌ | ❌ |
 | View employee history | ✅ | ✅ | ✅ (own only) |
@@ -444,27 +430,38 @@ Authorization: Bearer <your_jwt_token>
 
 | Collection | Description |
 |---|---|
-| `users` | Login credentials (email, bcrypt-hashed password, role) |
-| `employees` | Employee profiles (name, designation, salary, allowances, deductions, departmentId, userRole, employeeType) |
-| `departments` | Department records with optional manager (`managerId`) and mandatory HR (`hrId`) assignment |
-| `leave_requests` | Individual leave applications with status (PENDING / APPROVED / REJECTED) |
-| `leave_balances` | Per-employee leave quota (annual, casual, sick, unpaid days remaining) |
-| `payroll` | Monthly payroll records with net salary and payment status |
-| `employee_history` | Audit trail of promotions, designation changes, and performance notes |
+| `users` | Login credentials — email, bcrypt password, role |
+| `employees` | Employee profiles — name, designation, salary, departmentId, userRole, employeeType |
+| `departments` | Departments with mandatory `hrId` and optional `managerId` |
+| `leave_requests` | Leave applications — type, dates, status (PENDING / APPROVED / REJECTED) |
+| `leave_balances` | Per-employee leave quota — annual (20), casual (10), sick (15), unpaid (30) days |
+| `payroll` | Monthly payroll records — net salary, payment status (PAID / UNPAID) |
+| `employee_history` | Audit trail — PROMOTION, DESIGNATION_CHANGE, PERFORMANCE_NOTE records |
+
+See `submission/schema.dbml` for the full relational schema (import at [dbdiagram.io](https://dbdiagram.io)).
+
+---
+
+## Submission Files
+
+| File | Description |
+|---|---|
+| `submission/openapi.yaml` | OpenAPI 3.0.3 spec — import into [Swagger Editor](https://editor.swagger.io) or Postman |
+| `submission/postman_collection.json` | Role-based Postman collection (Auth, Admin, HR, Employee folders) |
+| `submission/schema.dbml` | DBML database schema — import at [dbdiagram.io → Import → DBML](https://dbdiagram.io) |
+| `submission/mongodb_schema.md` | MongoDB collection field reference |
 
 ---
 
 ## Default Admin Account
 
-On first startup, the backend automatically seeds one admin account if none exists:
+Seeded automatically on first startup if no admin exists:
 
 | Field | Value |
 |---|---|
 | Email | `admin@hrms.com` |
 | Password | `Admin@1234` |
 | Role | `ADMIN` |
-
-Change this password after your first login by updating the user directly in MongoDB or by implementing the change-password endpoint.
 
 ---
 

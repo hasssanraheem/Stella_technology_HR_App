@@ -1,6 +1,6 @@
 # Spring Boot
-demo/target/
-demo/.mvn/wrapper/maven-wrapper.jar
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
 *.class
 *.jar
 *.war
@@ -18,7 +18,7 @@ hr-management-system-frontend/.angular/
 
 # Environment secrets
 .env
-demo/.env
+backend/.env
 
 # Logs
 *.log

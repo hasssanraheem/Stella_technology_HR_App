@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HR Management System — API Reference</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+  <div class="cover">
+    <div class="logo">Stella Technology — Internship Final Project</div>
+    <h1>API Reference</h1>
+    <div class="subtitle">OpenAPI 3.0 specification summary — all endpoints, schemas, and response codes</div>
+    <div class="meta">
+      <span><strong>Base URL:</strong> http://localhost:8080</span>
+      <span><strong>Auth:</strong> JWT Bearer Token</span>
+      <span><strong>Spec file:</strong> openapi.yaml (importable into Swagger Editor &amp; Postman)</span>
+    </div>
+  </div>
+
+  <div class="info-box">
+    The full machine-readable spec is in <code>openapi.yaml</code>. Import it into <strong>Swagger Editor</strong> (editor.swagger.io → File → Import File) for interactive documentation, or into <strong>Postman</strong> (Import → select file) to generate a ready-to-use request collection.
+  </div>
+
+  <hr>
+
+  <h1>Authentication</h1>
+  <p>All endpoints except <code>POST /api/auth/login</code> require a <strong>JWT Bearer token</strong> in the Authorization header:</p>
+  <pre>Authorization: Bearer &lt;token&gt;</pre>
+  <p>Tokens are issued on login and expire after <strong>24 hours</strong>.</p>
+
+  <h2>Role Legend</h2>
+  <table>
+    <thead><tr><th>Badge</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-blue">ADMIN</span></td><td>Only admin accounts can call this endpoint</td></tr>
+      <tr><td><span class="badge badge-green">HR</span></td><td>HR accounts — data is auto-scoped to their department</td></tr>
+      <tr><td><span class="badge badge-purple">EMPLOYEE</span></td><td>Any authenticated employee</td></tr>
+      <tr><td><span class="badge badge-gray">ALL</span></td><td>Any authenticated role</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Auth Endpoints</h1>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>POST</td><td>/api/auth/login</td><td><span class="badge badge-gray">Public</span></td><td>Authenticate and receive a JWT token</td></tr>
+      <tr><td>GET</td><td>/api/auth/me</td><td><span class="badge badge-gray">ALL</span></td><td>Get current user's email and role</td></tr>
+    </tbody>
+  </table>
+
+  <h3>POST /api/auth/login — Request</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>email</code></td><td>string</td><td>Yes</td><td>Case-insensitive</td></tr>
+      <tr><td><code>password</code></td><td>string</td><td>Yes</td><td></td></tr>
+    </tbody>
+  </table>
+  <h3>POST /api/auth/login — Response 200</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>token</code></td><td>string</td><td>Signed JWT to use as Bearer token</td></tr>
+      <tr><td><code>role</code></td><td>string</td><td>ADMIN | HR | EMPLOYEE</td></tr>
+      <tr><td><code>email</code></td><td>string</td><td>The authenticated email</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Employee Endpoints</h1>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td>/api/employees</td><td><span class="badge badge-blue">ADMIN</span> <span class="badge badge-green">HR</span></td><td>Paginated list — supports name, status, userRole, departmentId filters</td></tr>
+      <tr><td>POST</td><td>/api/employees</td><td><span class="badge badge-blue">ADMIN</span></td><td>Register a new employee (creates user account + profile)</td></tr>
+      <tr><td>GET</td><td>/api/employees/{employeeId}</td><td><span class="badge badge-blue">ADMIN</span> <span class="badge badge-green">HR</span></td><td>Get single employee profile</td></tr>
+      <tr><td>PUT</td><td>/api/employees/{employeeId}</td><td><span class="badge badge-blue">ADMIN</span></td><td>Update employee details</td></tr>
+      <tr><td>DELETE</td><td>/api/employees/{employeeId}</td><td><span class="badge badge-blue">ADMIN</span></td><td>Delete employee and all associated data</td></tr>
+      <tr><td>GET</td><td>/api/employees/me</td><td><span class="badge badge-gray">ALL</span></td><td>Current user's own profile (with departmentId)</td></tr>
+      <tr><td>GET</td><td>/api/employees/{employeeId}/history</td><td><span class="badge badge-blue">ADMIN</span> <span class="badge badge-green">HR</span> <span class="badge badge-purple">EMPLOYEE</span></td><td>Promotion, designation change, and note history</td></tr>
+      <tr><td>POST</td><td>/api/employees/{employeeId}/notes</td><td><span class="badge badge-blue">ADMIN</span></td><td>Add a performance note</td></tr>
+    </tbody>
+  </table>
+
+  <h3>POST /api/employees — Request Body</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>name</code></td><td>string</td><td>Yes</td><td></td></tr>
+      <tr><td><code>email</code></td><td>string</td><td>Yes</td><td>Must be unique</td></tr>
+      <tr><td><code>password</code></td><td>string</td><td>Yes</td><td>Min 6 characters</td></tr>
+      <tr><td><code>phone</code></td><td>string</td><td>Yes</td><td></td></tr>
+      <tr><td><code>gender</code></td><td>enum</td><td>Yes</td><td>MALE | FEMALE</td></tr>
+      <tr><td><code>dateOfBirth</code></td><td>date</td><td>Yes</td><td>Format: YYYY-MM-DD</td></tr>
+      <tr><td><code>address</code></td><td>string</td><td>Yes</td><td></td></tr>
+      <tr><td><code>departmentId</code></td><td>string</td><td>No (HR)</td><td>Required for EMPLOYEE/MANAGER. HR defaults to DEPT-0000.</td></tr>
+      <tr><td><code>designation</code></td><td>string</td><td>Yes</td><td>Job title</td></tr>
+      <tr><td><code>dateOfJoining</code></td><td>date</td><td>Yes</td><td>Format: YYYY-MM-DD</td></tr>
+      <tr><td><code>salary</code></td><td>number</td><td>Yes</td><td>Base monthly salary</td></tr>
+      <tr><td><code>allowances</code></td><td>number</td><td>No</td><td>Default: 0</td></tr>
+      <tr><td><code>deductions</code></td><td>number</td><td>No</td><td>Default: 0</td></tr>
+      <tr><td><code>employeeType</code></td><td>enum</td><td>Yes</td><td>EMPLOYEE | MANAGER | HR</td></tr>
+      <tr><td><code>userRole</code></td><td>enum</td><td>Yes</td><td>EMPLOYEE | HR</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Department Endpoints</h1>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td>/api/departments</td><td><span class="badge badge-blue">ADMIN</span> <span class="badge badge-green">HR</span></td><td>List all departments</td></tr>
+      <tr><td>POST</td><td>/api/departments</td><td><span class="badge badge-blue">ADMIN</span></td><td>Create a department (hrId required)</td></tr>
+      <tr><td>PUT</td><td>/api/departments/{departmentId}</td><td><span class="badge badge-blue">ADMIN</span></td><td>Update department details</td></tr>
+      <tr><td>DELETE</td><td>/api/departments/{departmentId}</td><td><span class="badge badge-blue">ADMIN</span></td><td>Delete department; use <code>?targetDepartmentId=</code> to reassign employees</td></tr>
+    </tbody>
+  </table>
+
+  <h3>POST /api/departments — Request Body</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Must be unique</td></tr>
+      <tr><td><code>description</code></td><td>string</td><td>No</td><td></td></tr>
+      <tr><td><code>hrId</code></td><td>string</td><td>Yes</td><td>Must reference an employee with userRole HR. One HR per department.</td></tr>
+      <tr><td><code>managerId</code></td><td>string</td><td>No</td><td>Must reference an employee with employeeType MANAGER</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Leave Endpoints</h1>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>POST</td><td>/api/leave/apply</td><td><span class="badge badge-green">HR</span> <span class="badge badge-purple">EMPLOYEE</span></td><td>Submit a leave request</td></tr>
+      <tr><td>GET</td><td>/api/leave/my</td><td><span class="badge badge-green">HR</span> <span class="badge badge-purple">EMPLOYEE</span></td><td>Own leave request history</td></tr>
+      <tr><td>GET</td><td>/api/leave/my-balance</td><td><span class="badge badge-gray">ALL</span></td><td>Own remaining leave quotas</td></tr>
+      <tr><td>GET</td><td>/api/leave/all</td><td><span class="badge badge-blue">ADMIN</span></td><td>All leave requests org-wide</td></tr>
+      <tr><td>GET</td><td>/api/leave/department</td><td><span class="badge badge-green">HR</span></td><td>Leave requests for HR's department (auto-scoped)</td></tr>
+      <tr><td>POST</td><td>/api/leave/{leaveId}/approve</td><td><span class="badge badge-green">HR</span></td><td>Approve a PENDING request; decrements balance</td></tr>
+      <tr><td>POST</td><td>/api/leave/{leaveId}/reject</td><td><span class="badge badge-green">HR</span></td><td>Reject a PENDING request</td></tr>
+      <tr><td>GET</td><td>/api/leave/balances</td><td><span class="badge badge-blue">ADMIN</span> <span class="badge badge-green">HR</span></td><td>Balance lookup — optional <code>?name=</code> filter</td></tr>
+    </tbody>
+  </table>
+
+  <h3>POST /api/leave/apply — Request Body</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>leaveType</code></td><td>enum</td><td>Yes</td><td>ANNUAL | CASUAL | SICK | UNPAID</td></tr>
+      <tr><td><code>startDate</code></td><td>date</td><td>Yes</td><td>YYYY-MM-DD. Must not be after endDate.</td></tr>
+      <tr><td><code>endDate</code></td><td>date</td><td>Yes</td><td>YYYY-MM-DD</td></tr>
+      <tr><td><code>reason</code></td><td>string</td><td>Yes</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Leave Balance Object</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Default</th></tr></thead>
+    <tbody>
+      <tr><td><code>annualLeaves</code></td><td>number</td><td>18</td></tr>
+      <tr><td><code>casualLeaves</code></td><td>number</td><td>10</td></tr>
+      <tr><td><code>sickLeaves</code></td><td>number</td><td>8</td></tr>
+      <tr><td><code>unpaidLeaves</code></td><td>number</td><td>5</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Payroll Endpoints</h1>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>POST</td><td>/api/payroll/generate</td><td><span class="badge badge-green">HR</span></td><td>Generate monthly payroll (dept employees only)</td></tr>
+      <tr><td>PUT</td><td>/api/payroll/{payrollId}/status</td><td><span class="badge badge-green">HR</span></td><td>Update payment status (PAID / UNPAID)</td></tr>
+      <tr><td>GET</td><td>/api/payroll/all</td><td><span class="badge badge-blue">ADMIN</span></td><td>All payroll org-wide; filter by month, year, dept, status</td></tr>
+      <tr><td>GET</td><td>/api/payroll/department</td><td><span class="badge badge-green">HR</span></td><td>Payroll for HR's department (auto-scoped)</td></tr>
+      <tr><td>GET</td><td>/api/payroll/my</td><td><span class="badge badge-gray">ALL</span></td><td>Own payroll history</td></tr>
+    </tbody>
+  </table>
+
+  <h3>POST /api/payroll/generate — Request Body</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>employeeId</code></td><td>string</td><td>Yes</td><td>Must be in HR's department</td></tr>
+      <tr><td><code>month</code></td><td>number</td><td>Yes</td><td>1–12</td></tr>
+      <tr><td><code>year</code></td><td>number</td><td>Yes</td><td>e.g. 2026</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Payroll Response Object</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>payrollId</code></td><td>string</td><td>Sequential: PAY-0001, PAY-0002, …</td></tr>
+      <tr><td><code>employeeId</code></td><td>string</td><td></td></tr>
+      <tr><td><code>month</code></td><td>number</td><td>1–12</td></tr>
+      <tr><td><code>year</code></td><td>number</td><td></td></tr>
+      <tr><td><code>basicSalary</code></td><td>number</td><td>Copied from employee at generation time</td></tr>
+      <tr><td><code>allowances</code></td><td>number</td><td></td></tr>
+      <tr><td><code>deductions</code></td><td>number</td><td></td></tr>
+      <tr><td><code>netSalary</code></td><td>number</td><td>basicSalary + allowances − deductions</td></tr>
+      <tr><td><code>paymentStatus</code></td><td>enum</td><td>UNPAID | PAID</td></tr>
+      <tr><td><code>generatedAt</code></td><td>datetime</td><td>ISO 8601</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Error Response Format</h1>
+  <p>All error responses follow the same structure:</p>
+  <pre>{
+  <span class="key">"status"</span>:  <span class="num">400</span>,
+  <span class="key">"error"</span>:   <span class="str">"Bad Request"</span>,
+  <span class="key">"message"</span>: <span class="str">"Payroll already exists for this employee in September 2026"</span>,
+  <span class="key">"path"</span>:    <span class="str">"/api/payroll/generate"</span>
+}</pre>
+
+  <h1>HTTP Status Codes</h1>
+  <table>
+    <thead><tr><th>Code</th><th>Description</th><th>Common Causes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>200</strong> OK</td><td>Success</td><td>GET, PUT, DELETE succeeded normally</td></tr>
+      <tr><td><strong>201</strong> Created</td><td>New resource created</td><td>POST to register/apply/generate</td></tr>
+      <tr><td><strong>400</strong> Bad Request</td><td>Validation failed</td><td>Missing field, duplicate, insufficient leave balance, cross-dept payroll</td></tr>
+      <tr><td><strong>401</strong> Unauthorized</td><td>Authentication missing or invalid</td><td>No token, expired token, wrong token</td></tr>
+      <tr><td><strong>403</strong> Forbidden</td><td>Authenticated but not allowed</td><td>EMPLOYEE calling ADMIN-only endpoint</td></tr>
+      <tr><td><strong>404</strong> Not Found</td><td>Resource does not exist</td><td>Bad employeeId, leaveId, payrollId, departmentId</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Viewing the Full Spec</h1>
+  <p>The <code>openapi.yaml</code> file in the <code>submission/</code> folder is a complete OpenAPI 3.0.3 specification. To view it interactively:</p>
+
+  <h2>Option A — Swagger Editor (no install)</h2>
+  <ol>
+    <li>Open a browser and go to <strong>editor.swagger.io</strong></li>
+    <li>Click <strong>File → Import File</strong></li>
+    <li>Select <code>submission/openapi.yaml</code></li>
+    <li>The right panel shows the full interactive documentation</li>
+    <li>You can try requests directly from the browser (requires CORS-enabled backend)</li>
+  </ol>
+
+  <h2>Option B — Postman</h2>
+  <ol>
+    <li>Open Postman → click <strong>Import</strong> (top-left)</li>
+    <li>Select <code>submission/openapi.yaml</code></li>
+    <li>Postman generates a full collection from the spec</li>
+    <li>Set the base URL and JWT token in the collection variables</li>
+  </ol>
+
+  <p style="margin-top:40px; text-align:center; color:#94a3b8; font-size:9pt; border-top:1px solid #e2e8f0; padding-top:16px;">
+    HR Management System · API Reference · Stella Technology Internship Project, 2026 · Hassan Raheem
+  </p>
+
+</div>
+</body>
+</html>

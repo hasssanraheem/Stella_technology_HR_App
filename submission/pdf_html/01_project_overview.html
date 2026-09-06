@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HR Management System — Project Overview</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- Cover -->
+  <div class="cover">
+    <div class="logo">Stella Technology — Internship Final Project</div>
+    <h1>HR Management System</h1>
+    <div class="subtitle">Project Overview &amp; Setup Documentation</div>
+    <div class="meta">
+      <span><strong>Author:</strong> Hassan Raheem</span>
+      <span><strong>Email:</strong> hmarwat49@gmail.com</span>
+      <span><strong>Year:</strong> 2026</span>
+      <span><strong>Version:</strong> 1.0.0</span>
+    </div>
+  </div>
+
+  <h1>What is this Application?</h1>
+  <p>
+    The <strong>HR Management System</strong> is a full-stack web application built for Stella Technology as a final internship project. It digitises the core HR workflows of a company — employee onboarding, department management, leave tracking, and payroll generation — across three distinct user roles.
+  </p>
+
+  <div class="role-grid">
+    <div class="role-card admin-card">
+      <h4>Admin</h4>
+      <p>Manages the entire organisation. Registers employees, creates departments (each must have an HR assigned), and monitors all leaves and payroll in read-only view.</p>
+    </div>
+    <div class="role-card hr-card">
+      <h4>HR</h4>
+      <p>Manages day-to-day operations for their department only. Approves or rejects leave requests and generates monthly payroll for their employees.</p>
+    </div>
+    <div class="role-card emp-card">
+      <h4>Employee</h4>
+      <p>Personal self-service dashboard. Applies for leave, tracks request status, checks remaining leave balance, and views payroll history.</p>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>Key workflow:</strong> Admin registers HR employees first → Creates departments (each assigned one HR) → Registers regular employees → HR logs in and manages their department's leaves &amp; payroll → Employees apply for leave from their own dashboard.
+  </div>
+
+  <hr>
+
+  <h1>Tech Stack</h1>
+  <table>
+    <thead><tr><th>Layer</th><th>Technology</th></tr></thead>
+    <tbody>
+      <tr><td>Frontend</td><td>Angular 22 — standalone components, signals API, reactive forms</td></tr>
+      <tr><td>Backend</td><td>Spring Boot 4.1.1 — REST API, Spring Security 7, @PreAuthorize</td></tr>
+      <tr><td>Database</td><td>MongoDB 6+ — 7 collections, Spring Data MongoDB</td></tr>
+      <tr><td>Authentication</td><td>JWT (jjwt 0.12.6) — stateless Bearer token authentication</td></tr>
+      <tr><td>Build</td><td>Maven (backend) · Angular CLI / Vite (frontend)</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Features</h1>
+
+  <h2>Module 1 — Authentication</h2>
+  <ul>
+    <li>JWT-based stateless authentication with 24-hour token expiry</li>
+    <li>Three roles: <code>ADMIN</code>, <code>HR</code>, <code>EMPLOYEE</code></li>
+    <li>Case-insensitive email login (e.g. <code>ADMIN@HRMS.COM</code> = <code>admin@hrms.com</code>)</li>
+    <li>Route guards on the frontend — <code>authGuard</code>, <code>adminGuard</code>, <code>hrGuard</code></li>
+    <li>Default admin account auto-seeded on first startup</li>
+  </ul>
+
+  <h2>Module 2 — Employee Management (Admin)</h2>
+  <ul>
+    <li>Register employee in one flow: creates login account + employee profile</li>
+    <li>Employee types: <code>EMPLOYEE</code>, <code>MANAGER</code>, <code>HR</code></li>
+    <li>HR employees can be registered without a department — placed in Unassigned (DEPT-0000) until a department is created for them</li>
+    <li>Update details, change type (triggers automatic history record), delete, add performance notes</li>
+    <li>Search by name, filter pills: All / Employee / Manager / HR</li>
+    <li>Unassigned employees banner alerts admin when staff have no department</li>
+  </ul>
+
+  <h2>Module 3 — Department Management (Admin)</h2>
+  <ul>
+    <li>Create / update / delete departments</li>
+    <li><strong>Every department requires a mandatory HR assignment</strong> — cannot be saved without one</li>
+    <li>Validation prevents the same HR from being assigned to more than one department</li>
+    <li>Assign a manager from MANAGER-type employees (optional)</li>
+    <li>Departments table shows Manager name and HR name columns</li>
+    <li>Delete with employee reassignment — move staff to another department or the Unassigned bucket before deletion</li>
+  </ul>
+
+  <h2>Module 4 — Leave Management</h2>
+  <ul>
+    <li><strong>Admin:</strong> View all leaves (read-only), filter by status and department, leave cards show dept name and HR name, balance lookup for all employees</li>
+    <li><strong>HR:</strong> Approve / reject pending leaves for their department only (auto-scoped by backend), balance lookup for their department</li>
+    <li><strong>Employee:</strong> Apply for leave (Annual / Casual / Sick / Unpaid), view own history and remaining balance</li>
+    <li>Leave balance auto-decremented when a request is approved</li>
+    <li>Only PENDING requests can be actioned</li>
+  </ul>
+
+  <h2>Module 5 — Payroll Management</h2>
+  <ul>
+    <li><strong>HR:</strong> Generate payroll for department employees for a chosen month/year — employee dropdown shows only department members; mark as PAID / UNPAID</li>
+    <li><strong>Admin:</strong> View all payroll records (read-only), filter by month, year, status, and department</li>
+    <li><strong>Employee:</strong> View own payroll history with net salary breakdown</li>
+    <li>Net salary = <code>Basic Salary + Allowances − Deductions</code></li>
+  </ul>
+
+  <h2>Module 6 — Employee History &amp; Records</h2>
+  <ul>
+    <li>Automatic promotion record when employee type changes</li>
+    <li>Automatic designation change record when designation is updated</li>
+    <li>Admin can add free-text performance notes to any employee</li>
+    <li>Full history timeline viewable per employee, filterable by record type</li>
+  </ul>
+
+  <hr>
+
+  <h1>System Architecture</h1>
+  <pre>Browser (Angular 22)
+    │
+    │  HTTP + JWT Bearer token
+    ▼
+Spring Boot REST API  (port 8080)
+    │
+    ├── Spring Security 7
+    │     └── JwtAuthFilter validates every request
+    │
+    ├── Controllers → Services → Repositories
+    │     └── HR role auto-scoped to own department
+    │          (backend reads authentication.getName() to find departmentId)
+    │
+    └── MongoDB  (port 27017)
+          ├── users           ├── leave_requests
+          ├── employees       ├── leave_balances
+          ├── departments     ├── payroll
+                              └── employee_history</pre>
+
+  <h3>JWT Authentication Flow</h3>
+  <ol>
+    <li>User logs in → backend returns a signed JWT token (24-hour expiry)</li>
+    <li>Angular stores the token in <code>localStorage</code></li>
+    <li>A global HTTP interceptor automatically attaches <code>Authorization: Bearer &lt;token&gt;</code> to every request</li>
+    <li><code>JwtAuthFilter</code> validates the token and sets the Spring Security context</li>
+    <li><code>@PreAuthorize</code> annotations enforce role-based access per endpoint</li>
+    <li>For HR-scoped data, the backend reads the HR's email from the JWT, looks up their <code>departmentId</code>, and filters results accordingly</li>
+  </ol>
+
+  <hr>
+
+  <h1>Prerequisites</h1>
+  <table>
+    <thead><tr><th>Tool</th><th>Minimum Version</th><th>Check Command</th></tr></thead>
+    <tbody>
+      <tr><td>Java (JDK)</td><td>21</td><td><code>java -version</code></td></tr>
+      <tr><td>Maven</td><td>3.9+</td><td><code>mvn -v</code> or use <code>./mvnw</code></td></tr>
+      <tr><td>Node.js</td><td>18+</td><td><code>node -v</code></td></tr>
+      <tr><td>Angular CLI</td><td>18+</td><td><code>ng version</code></td></tr>
+      <tr><td>MongoDB</td><td>6+</td><td><code>mongod --version</code></td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h1>Setup &amp; Running Locally</h1>
+
+  <h2>Step 1 — Clone the repository</h2>
+  <pre>git clone https://github.com/hasssanraheem/Stella_technology_HR_App.git
+cd Stella_technology_HR_App</pre>
+
+  <h2>Step 2 — Start MongoDB</h2>
+  <pre><span class="cm"># macOS (Homebrew)</span>
+brew services start mongodb-community
+
+<span class="cm"># Linux</span>
+sudo systemctl start mongod
+
+<span class="cm"># Verify</span>
+mongosh --eval "db.runCommand({ ping: 1 })"
+<span class="cm"># Expected output: { ok: 1 }</span></pre>
+
+  <h2>Step 3 — Configure environment</h2>
+  <pre>cd demo
+cp ../.env.example .env</pre>
+  <p>Edit <code>demo/.env</code> with your values:</p>
+  <pre>MONGO_URI=mongodb://localhost:27017/hr_management_db
+JWT_SECRET=your_long_random_secret_at_least_32_hex_characters
+JWT_EXPIRATION=86400000</pre>
+  <div class="info-box">Generate a secure secret: <code>openssl rand -hex 32</code></div>
+
+  <h2>Step 4 — Run the backend</h2>
+  <pre><span class="cm"># macOS / Linux (from demo/ directory)</span>
+set -a &amp;&amp; source .env &amp;&amp; set +a
+./mvnw spring-boot:run
+
+<span class="cm"># Windows (PowerShell)</span>
+$env:JWT_SECRET="your_secret"; $env:MONGO_URI="mongodb://localhost:27017/hr_management_db"
+.\mvnw.cmd spring-boot:run</pre>
+  <p>The backend starts on <strong>http://localhost:8080</strong></p>
+  <p>On first startup, the system seeds the admin account and the Unassigned system department automatically.</p>
+
+  <h2>Step 5 — Run the frontend</h2>
+  <pre>cd hr-management-system-frontend
+npm install       <span class="cm"># first time only</span>
+ng serve</pre>
+  <p>The frontend starts on <strong>http://localhost:4200</strong></p>
+
+  <h2>Step 6 — Log in</h2>
+  <table>
+    <thead><tr><th>Field</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>URL</td><td>http://localhost:4200</td></tr>
+      <tr><td>Email</td><td>admin@hrms.com</td></tr>
+      <tr><td>Password</td><td>Admin@1234</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Recommended first-run order</h2>
+  <ol>
+    <li>Log in as <strong>Admin</strong></li>
+    <li>Go to <strong>Employees</strong> → register one or more HR users (role: HR — no department needed yet)</li>
+    <li>Go to <strong>Departments</strong> → create a department and assign an HR user</li>
+    <li>Go to <strong>Employees</strong> → register regular employees, assign them to the department</li>
+    <li>Log out → log in as the <strong>HR</strong> user to manage leaves and payroll</li>
+    <li>Log out → log in as an <strong>Employee</strong> to apply for leave and view payroll</li>
+  </ol>
+
+  <hr>
+
+  <h1>Environment Variables</h1>
+  <table>
+    <thead><tr><th>Variable</th><th>Description</th><th>Default</th></tr></thead>
+    <tbody>
+      <tr><td><code>MONGO_URI</code></td><td>MongoDB connection string</td><td><code>mongodb://localhost:27017/hr_management_db</code></td></tr>
+      <tr><td><code>JWT_SECRET</code></td><td>Secret key for signing/verifying JWT tokens</td><td><strong>Required — no default</strong></td></tr>
+      <tr><td><code>JWT_EXPIRATION</code></td><td>Token lifetime in milliseconds</td><td><code>86400000</code> (24 hours)</td></tr>
+    </tbody>
+  </table>
+  <div class="warn-box"><strong>Security:</strong> Never commit <code>.env</code> to GitHub. The file is in <code>.gitignore</code> and will not be pushed. The <code>application.yml</code> references secrets as <code>${JWT_SECRET}</code> — not hardcoded values.</div>
+
+  <hr>
+
+  <h1>Roles &amp; Permissions</h1>
+  <table>
+    <thead><tr><th>Feature</th><th>Admin</th><th>HR</th><th>Employee</th></tr></thead>
+    <tbody>
+      <tr><td>Register / Edit / Delete employee</td><td>✅</td><td>❌</td><td>❌</td></tr>
+      <tr><td>Create / Edit / Delete department</td><td>✅</td><td>❌</td><td>❌</td></tr>
+      <tr><td>Assign HR and manager to department</td><td>✅</td><td>❌</td><td>❌</td></tr>
+      <tr><td>View all employees (org-wide)</td><td>✅</td><td>✅</td><td>❌</td></tr>
+      <tr><td>View own profile</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Apply for leave</td><td>❌</td><td>✅</td><td>✅</td></tr>
+      <tr><td>View all leaves (org-wide)</td><td>✅ (read-only)</td><td>❌</td><td>❌</td></tr>
+      <tr><td>View department leaves</td><td>❌</td><td>✅</td><td>❌</td></tr>
+      <tr><td>Approve / reject leave</td><td>❌</td><td>✅ (dept only)</td><td>❌</td></tr>
+      <tr><td>Generate payroll</td><td>❌</td><td>✅ (dept only)</td><td>❌</td></tr>
+      <tr><td>Mark payroll paid / unpaid</td><td>❌</td><td>✅ (dept only)</td><td>❌</td></tr>
+      <tr><td>View all payroll (org-wide)</td><td>✅ (read-only)</td><td>❌</td><td>❌</td></tr>
+      <tr><td>View own payroll</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Add performance note</td><td>✅</td><td>❌</td><td>❌</td></tr>
+      <tr><td>View employee history</td><td>✅</td><td>✅</td><td>✅ (own only)</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:40px; text-align:center; color:#94a3b8; font-size:9pt; border-top:1px solid #e2e8f0; padding-top:16px;">
+    HR Management System · Stella Technology Internship Project, 2026 · Hassan Raheem
+  </p>
+
+</div>
+</body>
+</html>
