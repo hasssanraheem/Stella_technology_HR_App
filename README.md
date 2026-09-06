@@ -4,6 +4,68 @@ A full-stack Human Resources Management System built as an internship project at
 
 ---
 
+## Repository Structure
+
+This is what you see when you open the repo on GitHub:
+
+```
+Stella_technology_HR_App/
+│
+├── backend/                    Spring Boot REST API (Java 21, Maven)
+├── hr-management-system-frontend/   Angular 22 frontend
+├── submission/                 Project documentation (OpenAPI, Postman, DBML schema)
+├── docker-compose.yml          One command to run everything — backend, frontend, MongoDB
+└── README.md                   You are here
+```
+
+> **Note:** A `.env` file is required locally to run the app (see below). It is not in the repo because it contains your secret key — see [.gitignore](.gitignore).
+
+---
+
+## Before You Start — Set Your JWT Secret
+
+The backend needs a secret key to sign login tokens. Without it the app will not start.
+
+**Step 1 — Create a file called `.env` in the root of the project** (same folder as `docker-compose.yml`):
+
+```
+Stella_technology_HR_App/
+├── .env                ← create this file
+├── docker-compose.yml
+├── backend/
+...
+```
+
+**Step 2 — Add this content to the `.env` file:**
+
+```env
+JWT_SECRET=replace_this_with_any_long_random_string_at_least_32_characters
+```
+
+**Example with a real secret:**
+
+```env
+JWT_SECRET=a3f9c2e1b4d8f7a0c5e2d1b9f3a6c8e0d4b2f1a9e7c3d5b8f0a2e4c6d8b1f3
+```
+
+You can use anything as the secret — just make it long and random. To generate one automatically, run this in your terminal:
+
+```bash
+openssl rand -hex 32
+```
+
+Copy the output and paste it as the value of `JWT_SECRET` in your `.env` file.
+
+**That's it.** Now run:
+
+```bash
+docker compose up -d
+```
+
+All three servers (MongoDB, backend, frontend) start together. Open **http://localhost:4200** and log in with `admin@hrms.com` / `Admin@1234`.
+
+---
+
 ## What is this application?
 
 **Admin** manages the entire organisation — registers employees, creates departments (each must have a dedicated HR assigned), oversees all leave requests (including a dedicated **HR Leave Approvals** tab to approve or reject leave submitted by HR employees), and monitors all payroll history across every department.
