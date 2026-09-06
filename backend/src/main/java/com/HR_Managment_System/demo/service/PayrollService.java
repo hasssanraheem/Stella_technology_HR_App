@@ -72,6 +72,12 @@ public class PayrollService {
                 .stream().map(payrollMapper::toResponse).toList();
     }
 
+    public PayrollResponse getPayroll(String payrollId) {
+        Payroll payroll = payrollRepository.findByPayrollId(payrollId)
+                .orElseThrow(() -> new PayrollNotFoundException("Payroll not found: " + payrollId));
+        return payrollMapper.toResponse(payroll);
+    }
+
     public PayrollResponse updatePaymentStatus(String payrollId, PaymentStatus status) {
         Payroll payroll = payrollRepository.findByPayrollId(payrollId)
                 .orElseThrow(() -> new PayrollNotFoundException("Payroll not found: " + payrollId));

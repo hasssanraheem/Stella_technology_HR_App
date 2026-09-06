@@ -25,7 +25,12 @@ public class PayrollController {
 
     @PostMapping("/generate")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<PayrollResponse> generatePayroll(@Valid @RequestBody PayrollRequest request) {
+    public ResponseEntity<PayrollResponse> generatePayroll(@Valid @RequestBody PayrollRequest request,
+                                                            Authentication authentication) {
+        String hrDeptId = employeeService.getEmployeeByEmail(authentication.getName()).getDepartmentId();
+        if (!hrDeptId.equals(employeeService.getEmployeeById(request.getEmployeeId()).getDepartmentId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(payrollService.generatePayroll(request));
     }
 
@@ -49,7 +54,14 @@ public class PayrollController {
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<PayrollResponse> updatePaymentStatus(
             @PathVariable String payrollId,
-            @RequestParam PaymentStatus status) {
+            @RequestParam PaymentStatus status,
+            Authentication authentication) {
+        String hrDeptId = employeeService.getEmployeeByEmail(authentication.getName()).getDepartmentId();
+        String targetDeptId = employeeService.getEmployeeById(
+                payrollService.getPayroll(payrollId).getEmployeeId()).getDepartmentId();
+        if (!hrDeptId.equals(targetDeptId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(payrollService.updatePaymentStatus(payrollId, status));
     }
 }

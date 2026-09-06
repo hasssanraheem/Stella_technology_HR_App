@@ -46,9 +46,12 @@ public class LeaveController {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
         if (isHR) {
             LeaveResponse leave = leaveService.getLeave(leaveId);
-            EmployeeResponse requester =
-                    employeeService.getEmployeeById(leave.getEmployeeId());
+            EmployeeResponse requester = employeeService.getEmployeeById(leave.getEmployeeId());
             if ("HR".equals(requester.getUserRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            String hrDeptId = employeeService.getEmployeeByEmail(authentication.getName()).getDepartmentId();
+            if (!hrDeptId.equals(requester.getDepartmentId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
         }

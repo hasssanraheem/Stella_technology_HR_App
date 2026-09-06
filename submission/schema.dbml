@@ -3,95 +3,95 @@
 // Import at: https://dbdiagram.io → Import → DBML
 
 Table users {
-  id       string [pk, note: 'MongoDB ObjectId (_id)']
-  email    string [unique, note: 'Indexed unique. Case-insensitive login enforced at service layer']
-  password string [note: 'BCrypt-hashed. Min 8 chars, requires upper, lower, digit']
-  role     string [note: 'Enum: ADMIN | HR | EMPLOYEE']
+  id        varchar  [pk, note: 'MongoDB ObjectId (_id)']
+  email     varchar  [unique, note: 'Indexed unique. Case-insensitive login enforced at service layer']
+  password  varchar  [note: 'BCrypt-hashed. Min 8 chars, requires upper, lower, digit']
+  role      varchar  [note: 'Enum: ADMIN | HR | EMPLOYEE']
   createdAt datetime
   updatedAt datetime
 }
 
 Table employees {
-  id           string [pk, note: 'MongoDB ObjectId (_id)']
-  employeeId   string [unique, note: 'Business key, e.g. EMP-0001']
-  name         string
-  email        string [unique, ref: > users.email]
-  phone        string
-  gender       string
-  dateOfBirth  date
-  address      string
-  departmentId string [ref: > departments.departmentId, note: 'Null/DEPT-0000 = Unassigned']
-  designation  string
+  id            varchar  [pk, note: 'MongoDB ObjectId (_id)']
+  employeeId    varchar  [unique, note: 'Business key, e.g. EMP-0001. Indexed unique']
+  name          varchar
+  email         varchar  [unique, note: 'Indexed unique. Mirrors users.email for the same person — no programmatic join enforced']
+  phone         varchar
+  gender        varchar
+  dateOfBirth   date
+  address       varchar
+  departmentId  varchar  [ref: > departments.departmentId, note: 'Null / DEPT-0000 = Unassigned']
+  designation   varchar
   dateOfJoining date
-  salary       number
-  allowances   number [note: 'Default: 0.0']
-  deductions   number [note: 'Default: 0.0']
-  status       string [note: 'Enum: ACTIVE | INACTIVE. Default: ACTIVE']
-  userRole     string [note: 'Enum: ADMIN | HR | EMPLOYEE. Controls route access']
-  employeeType string [note: 'Enum: EMPLOYEE | MANAGER | HR. Default: EMPLOYEE']
-  createdAt    datetime
-  updatedAt    datetime
+  salary        float
+  allowances    float    [note: 'Default: 0.0']
+  deductions    float    [note: 'Default: 0.0']
+  status        varchar  [note: 'Enum: ACTIVE | INACTIVE. Default: ACTIVE']
+  userRole      varchar  [note: 'Free-form string storing Role-enum values (ADMIN | HR | EMPLOYEE). Not a Java enum. Used in service-layer checks e.g. "HR".equals(userRole)']
+  employeeType  varchar  [note: 'Enum: MANAGER | EMPLOYEE | HR. Default: EMPLOYEE']
+  createdAt     datetime
+  updatedAt     datetime
 }
 
 Table departments {
-  id           string [pk, note: 'MongoDB ObjectId (_id)']
-  departmentId string [unique, note: 'Business key, e.g. DEPT-0001']
-  name         string [unique]
-  description  string
-  managerId    string [ref: > employees.employeeId, note: 'Optional. Must be MANAGER-type employee']
-  hrId         string [ref: > employees.employeeId, note: 'Required. Must be HR-type employee. One HR per department']
-  isSystem     boolean [note: 'True for the Unassigned system department (DEPT-0000)']
+  id           varchar  [pk, note: 'MongoDB ObjectId (_id)']
+  departmentId varchar  [unique, note: 'Business key, e.g. DEPT-0001. Indexed unique']
+  name         varchar  [unique, note: 'Indexed unique']
+  description  varchar
+  managerId    varchar  [ref: > employees.employeeId, note: 'Optional. Must be MANAGER-type employee (EmployeeType.MANAGER)']
+  hrId         varchar  [ref: > employees.employeeId, note: 'Optional. Must be HR-type employee. Service-enforced: one HR per department (findByHrId check)']
+  isSystem     boolean  [note: 'True only for the Unassigned system department (DEPT-0000). Cannot be deleted']
   createdAt    datetime
   updatedAt    datetime
 }
 
 Table leave_requests {
-  id         string [pk, note: 'MongoDB ObjectId (_id)']
-  leaveId    string [unique, note: 'Business key, e.g. LVE-0001']
-  employeeId string [ref: > employees.employeeId]
-  leaveType  string [note: 'Enum: ANNUAL | CASUAL | SICK | UNPAID']
+  id         varchar  [pk, note: 'MongoDB ObjectId (_id)']
+  leaveId    varchar  [unique, note: 'Business key, e.g. LVE-0001. Indexed unique']
+  employeeId varchar  [ref: > employees.employeeId, note: 'Not indexed in entity — queries use collection scan filtered by employeeId']
+  leaveType  varchar  [note: 'Enum: ANNUAL | CASUAL | SICK | UNPAID']
   startDate  date
   endDate    date
-  reason     string
-  status     string [note: 'Enum: PENDING | APPROVED | REJECTED. Default: PENDING']
+  reason     varchar
+  status     varchar  [note: 'Enum: PENDING | APPROVED | REJECTED. Default: PENDING. Only PENDING records can be updated']
   appliedAt  datetime
   updatedAt  datetime
 }
 
 Table leave_balances {
-  id           string [pk, note: 'MongoDB ObjectId (_id)']
-  employeeId   string [unique, ref: > employees.employeeId, note: '1-to-1 with employees. Auto-created on employee registration']
-  annualLeaves int [note: 'Default: 20. Decremented on approval']
-  casualLeaves int [note: 'Default: 10. Decremented on approval']
-  sickLeaves   int [note: 'Default: 15. Decremented on approval']
-  unpaidLeaves int [note: 'Default: 30. Decremented on approval']
+  id           varchar  [pk, note: 'MongoDB ObjectId (_id)']
+  employeeId   varchar  [unique, ref: - employees.employeeId, note: 'Indexed unique — 1-to-1 with employees. Auto-created when an employee is registered']
+  annualLeaves int      [note: 'Default: 20. Decremented on leave approval']
+  casualLeaves int      [note: 'Default: 10. Decremented on leave approval']
+  sickLeaves   int      [note: 'Default: 15. Decremented on leave approval']
+  unpaidLeaves int      [note: 'Default: 30. Decremented on leave approval']
   createdAt    datetime
   updatedAt    datetime
 }
 
 Table payroll {
-  id            string [pk, note: 'MongoDB ObjectId (_id)']
-  payrollId     string [unique, note: 'Business key, e.g. PAY-0001']
-  employeeId    string [ref: > employees.employeeId, note: 'Compound unique index: (employeeId, month, year)']
-  month         int [note: '1–12']
+  id            varchar  [pk, note: 'MongoDB ObjectId (_id)']
+  payrollId     varchar  [unique, note: 'Business key, e.g. PAY-0001. Indexed unique']
+  employeeId    varchar  [ref: > employees.employeeId, note: 'Part of compound unique index: (employeeId, month, year) — prevents duplicate payroll per period']
+  month         int      [note: '1–12']
   year          int
-  basicSalary   number
-  allowances    number
-  deductions    number
-  netSalary     number [note: 'Computed: basicSalary + allowances - deductions']
-  paymentStatus string [note: 'Enum: PAID | UNPAID. Default: UNPAID']
+  basicSalary   float
+  allowances    float
+  deductions    float
+  netSalary     float    [note: 'Computed: basicSalary + allowances - deductions']
+  paymentStatus varchar  [note: 'Enum: PAID | UNPAID. Default: UNPAID']
   generatedAt   datetime
   updatedAt     datetime
 }
 
 Table employee_history {
-  id            string [pk, note: 'MongoDB ObjectId (_id)']
-  historyId     string [unique, note: 'Business key, e.g. HIST-0001']
-  employeeId    string [ref: > employees.employeeId, note: 'Indexed (non-unique)']
-  type          string [note: 'Enum: PROMOTION | DESIGNATION_CHANGE | PERFORMANCE_NOTE']
-  previousValue string [note: 'Null for PERFORMANCE_NOTE records']
-  newValue      string [note: 'Null for PERFORMANCE_NOTE records']
-  note          string [note: 'Populated only for PERFORMANCE_NOTE type']
-  recordedBy    string [note: 'employeeId of the admin who made the change']
+  id            varchar  [pk, note: 'MongoDB ObjectId (_id)']
+  historyId     varchar  [unique, note: 'Business key, e.g. HIST-0001. Indexed unique']
+  employeeId    varchar  [ref: > employees.employeeId, note: 'Indexed non-unique (@Indexed without unique=true)']
+  type          varchar  [note: 'Enum: PROMOTION | DESIGNATION_CHANGE | PERFORMANCE_NOTE']
+  previousValue varchar  [note: 'Populated for PROMOTION and DESIGNATION_CHANGE; null for PERFORMANCE_NOTE']
+  newValue      varchar  [note: 'Populated for PROMOTION and DESIGNATION_CHANGE; null for PERFORMANCE_NOTE']
+  note          varchar  [note: 'Populated only for PERFORMANCE_NOTE type']
+  recordedBy    varchar  [note: 'Email of the authenticated user who recorded this change (from Spring Security context — not an employeeId)']
   recordedAt    datetime
 }

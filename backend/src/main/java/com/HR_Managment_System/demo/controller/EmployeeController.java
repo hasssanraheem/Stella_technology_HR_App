@@ -89,7 +89,16 @@ public class EmployeeController {
     @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<EmployeeResponse> updateEmployee(
             @PathVariable String employeeId,
-            @RequestBody EmployeeUpdateRequest request) {
+            @RequestBody EmployeeUpdateRequest request,
+            Authentication authentication) {
+        boolean isHR = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
+        if (isHR) {
+            String hrDeptId = employeeService.getEmployeeByEmail(authentication.getName()).getDepartmentId();
+            if (!hrDeptId.equals(employeeService.getEmployeeById(employeeId).getDepartmentId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
         EmployeeResponse response = employeeService.updateEmployee(employeeId, request);
         return ResponseEntity.ok(response);
     }
@@ -105,14 +114,32 @@ public class EmployeeController {
 
     @GetMapping("/{employeeId}/leaves")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'EMPLOYEE')")
-    public ResponseEntity<List<LeaveResponse>> getEmployeeLeaves(@PathVariable String employeeId) {
+    public ResponseEntity<List<LeaveResponse>> getEmployeeLeaves(@PathVariable String employeeId,
+            Authentication authentication) {
+        boolean isHR = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
+        if (isHR) {
+            String hrDeptId = employeeService.getEmployeeByEmail(authentication.getName()).getDepartmentId();
+            if (!hrDeptId.equals(employeeService.getEmployeeById(employeeId).getDepartmentId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
         List<LeaveResponse> leaves = leaveService.getLeavesByEmployee(employeeId);
         return ResponseEntity.ok(leaves);
     }
 
     @GetMapping("/{employeeId}/payroll")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'EMPLOYEE')")
-    public ResponseEntity<List<PayrollResponse>> getEmployeePayroll(@PathVariable String employeeId) {
+    public ResponseEntity<List<PayrollResponse>> getEmployeePayroll(@PathVariable String employeeId,
+            Authentication authentication) {
+        boolean isHR = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
+        if (isHR) {
+            String hrDeptId = employeeService.getEmployeeByEmail(authentication.getName()).getDepartmentId();
+            if (!hrDeptId.equals(employeeService.getEmployeeById(employeeId).getDepartmentId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
         List<PayrollResponse> records = payrollService.getPayrollByEmployee(employeeId);
         return ResponseEntity.ok(records);
     }
@@ -130,7 +157,16 @@ public class EmployeeController {
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'EMPLOYEE')")
     public ResponseEntity<List<EmployeeHistoryResponse>> getEmployeeHistory(
             @PathVariable String employeeId,
-            @RequestParam(required = false) HistoryType type) {
+            @RequestParam(required = false) HistoryType type,
+            Authentication authentication) {
+        boolean isHR = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
+        if (isHR) {
+            String hrDeptId = employeeService.getEmployeeByEmail(authentication.getName()).getDepartmentId();
+            if (!hrDeptId.equals(employeeService.getEmployeeById(employeeId).getDepartmentId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
         return ResponseEntity.ok(employeeHistoryService.getHistory(employeeId, type));
     }
 
