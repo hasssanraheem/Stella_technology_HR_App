@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.HR_Managment_System.demo.dto.EmployeeResponse;
 
 @RestController
 @RequestMapping("/api/leaves")
