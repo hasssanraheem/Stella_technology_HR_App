@@ -4,71 +4,6 @@ A full-stack Human Resources Management System built as an internship project at
 
 ---
 
-## Repository Structure
-
-This is what you see when you open the repo on GitHub:
-
-```
-Stella_technology_HR_App/
-│
-├── backend/                         Spring Boot REST API (Java 21, Maven)
-├── hr-management-system-frontend/   Angular 22 frontend
-├── submission/                       Project documentation (OpenAPI, Postman, DBML schema)
-├── HR_PROJECT_DB_SCHEMA.pdf          MongoDB collections schema — visual field-by-field reference
-├── openapi.yaml                      OpenAPI 3.0.3 spec — import into Swagger Editor or Postman
-├── postman_collection.json           Role-based Postman collection (Auth / Admin / HR / Employee)
-├── docker-compose.yml               One command to run everything — backend, frontend, MongoDB
-└── README.md                        You are here
-```
-
-> **Note:** A `.env` file is required locally to run the app (see below). It is not in the repo because it contains your secret key — see [.gitignore](.gitignore).
-
----
-
-## Before You Start — Set Your JWT Secret
-
-The backend needs a secret key to sign login tokens. Without it the app will not start.
-
-**Step 1 — Create a file called `.env` in the root of the project** (same folder as `docker-compose.yml`):
-
-```
-Stella_technology_HR_App/
-├── .env                ← create this file
-├── docker-compose.yml
-├── backend/
-...
-```
-
-**Step 2 — Add this content to the `.env` file:**
-
-```env
-JWT_SECRET=replace_this_with_any_long_random_string_at_least_32_characters
-```
-
-**Example with a real secret:**
-
-```env
-JWT_SECRET=a3f9c2e1b4d8f7a0c5e2d1b9f3a6c8e0d4b2f1a9e7c3d5b8f0a2e4c6d8b1f3
-```
-
-You can use anything as the secret — just make it long and random. To generate one automatically, run this in your terminal:
-
-```bash
-openssl rand -hex 32
-```
-
-Copy the output and paste it as the value of `JWT_SECRET` in your `.env` file.
-
-**That's it.** Now run:
-
-```bash
-docker compose up -d
-```
-
-All three servers (MongoDB, backend, frontend) start together. Open **http://localhost:4200** and log in with `admin@hrms.com` / `Admin@1234`.
-
----
-
 ## What is this application?
 
 **Admin** manages the entire organisation — registers employees, creates departments (each must have a dedicated HR assigned), oversees all leave requests (including a dedicated **HR Leave Approvals** tab to approve or reject leave submitted by HR employees), and monitors all payroll history across every department.
@@ -97,20 +32,22 @@ All three servers (MongoDB, backend, frontend) start together. Open **http://loc
 ## Table of Contents
 
 1. [Tech Stack](#tech-stack)
-2. [Project Structure](#project-structure)
-3. [Features](#features)
-4. [System Architecture](#system-architecture)
-5. [Prerequisites](#prerequisites)
-6. [Setup & Running Locally](#setup--running-locally)
-7. [Environment Variables](#environment-variables)
-8. [API Reference](#api-reference)
-9. [Roles & Permissions](#roles--permissions)
-10. [Database Collections](#database-collections)
-11. [MongoDB Schema PDF](#mongodb-schema-pdf)
-12. [API Testing with Postman](#api-testing-with-postman)
-13. [Running Tests](#running-tests)
-14. [Submission Files](#submission-files)
-15. [Default Admin Account](#default-admin-account)
+2. [Repository Structure](#repository-structure)
+3. [Prerequisites](#prerequisites)
+4. [Setup & Running Locally](#setup--running-locally)
+5. [Default Admin Account](#default-admin-account)
+6. [Roles & Permissions](#roles--permissions)
+7. [Features](#features)
+8. [System Architecture](#system-architecture)
+9. [Environment Variables](#environment-variables)
+10. [API Reference](#api-reference)
+11. [Database Collections](#database-collections)
+12. [MongoDB Schema PDF](#mongodb-schema-pdf)
+13. [API Testing with Postman](#api-testing-with-postman)
+14. [Running Tests](#running-tests)
+15. [Project Structure](#project-structure)
+16. [Backend File Structure — Explained](#backend-file-structure--explained)
+17. [Submission Files](#submission-files)
 
 ---
 
@@ -126,65 +63,213 @@ All three servers (MongoDB, backend, frontend) start together. Open **http://loc
 
 ---
 
-## Project Structure
+## Repository Structure
+
+This is what you see when you open the repo on GitHub:
 
 ```
-Stella_Technology_Final_Project/
+Stella_technology_HR_App/
 │
-├── backend/                       ← Spring Boot backend
-│   ├── src/main/java/com/HR_Managnet_System/demo/
-│   │   ├── config/                ← SecurityConfig, DataInitializer
-│   │   ├── controller/            ← Auth, Employee, Department, Leave, Payroll
-│   │   ├── dto/                   ← Request / Response DTOs
-│   │   ├── entity/                ← MongoDB @Document entities
-│   │   ├── enums/                 ← Role, LeaveType, LeaveStatus, EmployeeType, PaymentStatus, HistoryType
-│   │   ├── exception/             ← Typed exceptions + GlobalExceptionHandler
-│   │   ├── mapper/                ← Entity ↔ DTO converters
-│   │   ├── repository/            ← Spring Data MongoDB repositories
-│   │   ├── security/              ← JwtAuthFilter, CustomUserDetailsService
-│   │   ├── service/               ← Business logic layer
-│   │   └── util/                  ← JwtUtil
-│   ├── src/main/resources/
-│   │   └── application.yml        ← App config (reads secrets from env vars)
-│   └── src/test/java/com/HR_Managnet_System/demo/service/
-│       ├── EmployeeServiceTest.java   ← 8 unit tests
-│       ├── LeaveServiceTest.java      ← 8 unit tests
-│       └── PayrollServiceTest.java    ← 7 unit tests
-│
-├── hr-management-system-frontend/ ← Angular 22 frontend
-│   └── src/app/
-│       ├── core/
-│       │   ├── guards/            ← authGuard, adminGuard, hrGuard
-│       │   ├── interceptors/      ← JWT interceptor (auto-attaches Bearer token)
-│       │   └── services/          ← AuthService, EmployeeService, DepartmentService,
-│       │                             LeaveService, PayrollService
-│       └── pages/
-│           ├── login/             ← Shared login page
-│           ├── dashboard/         ← Employee self-service dashboard
-│           ├── admin/
-│           │   ├── layout/        ← Admin sidebar shell
-│           │   ├── employees/     ← CRUD, type change, performance notes, history
-│           │   ├── departments/   ← CRUD, HR assignment, manager, reassign employees
-│           │   ├── leaves/        ← Employee Leaves tab (read-only) + HR Leave Approvals tab
-│           │   └── payroll/       ← Org-wide payroll view
-│           └── hr/
-│               ├── layout/        ← HR sidebar shell
-│               ├── leaves/        ← Department Approvals tab + My Leave tab (apply & history)
-│               └── payroll/       ← Generate + mark paid/unpaid for own department
-│
-├── submission/                    ← Project documentation & API specs
-│   ├── openapi.yaml               ← OpenAPI 3.0.3 specification (import into Swagger UI or Postman)
-│   ├── postman_collection.json    ← Role-based Postman collection (Auth, Admin, HR, Employee)
-│   ├── schema.dbml                ← DBML schema for dbdiagram.io
-│   ├── mongodb_schema.md          ← MongoDB collections reference
-│   └── pdf_html/                  ← Source HTML for documentation PDFs
-│
-├── HR_PROJECT_DB_SCHEMA.pdf       ← Visual MongoDB schema — all 7 collections with field types
-├── openapi.yaml                   ← OpenAPI 3.0.3 spec (same as submission/, root copy for easy access)
-├── postman_collection.json        ← Postman collection (same as submission/, root copy for easy access)
-├── .gitignore
-└── README.md
+├── backend/                         Spring Boot REST API (Java 21, Maven)
+├── hr-management-system-frontend/   Angular 22 frontend
+├── submission/                       Project documentation (OpenAPI, Postman, DBML schema)
+├── HR_PROJECT_DB_SCHEMA.pdf          MongoDB collections schema — visual field-by-field reference
+├── openapi.yaml                      OpenAPI 3.0.3 spec — import into Swagger Editor or Postman
+├── postman_collection.json           Role-based Postman collection (Auth / Admin / HR / Employee)
+├── docker-compose.yml               One command to run everything — backend, frontend, MongoDB
+└── README.md                        You are here
 ```
+
+> **Note:** A `.env` file is required locally to run the app (see below). It is not in the repo because it contains your secret key — see [.gitignore](.gitignore).
+
+---
+
+## Prerequisites
+
+Before you run anything, make sure these tools are installed:
+
+| Tool | Minimum Version | Check |
+|---|---|---|
+| Docker & Docker Compose | Latest | `docker -v` |
+| Java (JDK) | 21 | `java -version` (manual setup only) |
+| Maven | 3.9+ | `mvn -v` (manual setup only) |
+| Node.js | 18+ | `node -v` (manual setup only) |
+| Angular CLI | 18+ | `ng version` (manual setup only) |
+| MongoDB | 6+ | `mongod --version` (manual setup only) |
+
+If you are using **Docker**, you only need Docker itself — it handles Java, Node, and MongoDB for you.
+
+---
+
+## Setup & Running Locally
+
+### Option A — Docker (Recommended)
+
+The fastest way. One command starts the backend, frontend, and MongoDB together.
+
+**Step 1 — Clone the repository**
+
+```bash
+git clone https://github.com/hasssanraheem/Stella_technology_HR_App.git
+cd Stella_technology_HR_App
+```
+
+**Step 2 — Create your `.env` file**
+
+The backend needs a secret key to sign login tokens. Create a file called `.env` in the root of the project (same folder as `docker-compose.yml`):
+
+```
+Stella_technology_HR_App/
+├── .env                ← create this file
+├── docker-compose.yml
+├── backend/
+...
+```
+
+Add this content to it:
+
+```env
+JWT_SECRET=replace_this_with_any_long_random_string_at_least_32_characters
+```
+
+To generate a secure secret automatically, run:
+
+```bash
+openssl rand -hex 32
+```
+
+Copy the output and paste it as the value of `JWT_SECRET`. Example:
+
+```env
+JWT_SECRET=a3f9c2e1b4d8f7a0c5e2d1b9f3a6c8e0d4b2f1a9e7c3d5b8f0a2e4c6d8b1f3
+```
+
+**Step 3 — Start everything**
+
+```bash
+docker compose up -d
+```
+
+All three servers (MongoDB, backend, frontend) start together. Open **http://localhost:4200** and log in with `admin@hrms.com` / `Admin@1234`.
+
+---
+
+### Option B — Manual Setup (without Docker)
+
+Use this if you prefer to run each server yourself.
+
+**Step 1 — Clone the repository**
+
+```bash
+git clone https://github.com/hasssanraheem/Stella_technology_HR_App.git
+cd Stella_technology_HR_App
+```
+
+**Step 2 — Start MongoDB**
+
+```bash
+# macOS (Homebrew)
+brew services start mongodb-community
+
+# Linux
+sudo systemctl start mongod
+```
+
+Verify:
+```bash
+mongosh --eval "db.runCommand({ ping: 1 })"
+# Expected: { ok: 1 }
+```
+
+**Step 3 — Configure the backend**
+
+Create a `.env` file inside the `backend/` folder:
+
+```env
+MONGO_URI=mongodb://localhost:27017/hr_management_db
+JWT_SECRET=your_long_random_secret_at_least_32_hex_characters
+JWT_EXPIRATION=86400000
+```
+
+Generate a secure secret:
+```bash
+openssl rand -hex 32
+```
+
+**Step 4 — Run the backend**
+
+```bash
+cd backend
+
+# macOS / Linux
+set -a && source .env && set +a
+./mvnw spring-boot:run
+
+# Windows (PowerShell)
+$env:JWT_SECRET="your_secret"; $env:MONGO_URI="mongodb://localhost:27017/hr_management_db"
+.\mvnw.cmd spring-boot:run
+```
+
+Backend starts on **http://localhost:8080**
+
+**Step 5 — Run the frontend**
+
+Open a **new terminal**:
+
+```bash
+cd hr-management-system-frontend
+npm install       # first time only
+ng serve
+```
+
+Frontend starts on **http://localhost:4200**
+
+---
+
+## Default Admin Account
+
+Seeded automatically on first startup if no admin exists:
+
+| Field | Value |
+|---|---|
+| Email | `admin@hrms.com` |
+| Password | `Admin@1234` |
+| Role | `ADMIN` |
+
+### Recommended first-run order
+
+1. Log in as **Admin** → register one or more HR employees (role: HR, no department needed)
+2. **Departments** → create a department, assign one of the HR users
+3. **Employees** → register regular employees, assign to the department
+4. Log out → log in as **HR** to manage leaves and payroll
+5. Log out → log in as **Employee** to apply for leave and view payroll
+
+---
+
+## Roles & Permissions
+
+| Feature | ADMIN | HR | EMPLOYEE |
+|---|:---:|:---:|:---:|
+| Register / Edit / Delete employee | ✅ | ❌ | ❌ |
+| Create / Edit / Delete department | ✅ | ❌ | ❌ |
+| Assign HR and manager to department | ✅ | ❌ | ❌ |
+| View all employees (org-wide) | ✅ | ✅ (dept only) | ❌ |
+| View own profile | ✅ | ✅ | ✅ |
+| Apply for leave | ❌ | ✅ | ✅ |
+| View own leave history & balance | ✅ | ✅ | ✅ |
+| View all leaves (org-wide) | ✅ | ❌ | ❌ |
+| View department leaves | ❌ | ✅ | ❌ |
+| Approve / reject employee leaves | ❌ | ✅ (dept only) | ❌ |
+| Approve / reject HR employees' leaves | ✅ | ❌ | ❌ |
+| Generate payroll | ❌ | ✅ (dept only) | ❌ |
+| Mark payroll paid / unpaid | ❌ | ✅ (dept only) | ❌ |
+| View all payroll (org-wide) | ✅ | ❌ | ❌ |
+| View department payroll | ❌ | ✅ | ❌ |
+| View own payroll | ✅ | ✅ | ✅ |
+| Leave balance lookup | ✅ (all) | ✅ (dept only) | ❌ |
+| Add performance note | ✅ | ❌ | ❌ |
+| Change employee type | ✅ | ❌ | ❌ |
+| View employee history | ✅ | ✅ | ✅ (own only) |
 
 ---
 
@@ -290,114 +375,6 @@ Spring Boot REST API  (port 8080)
 
 ---
 
-## Prerequisites
-
-| Tool | Minimum Version | Check |
-|---|---|---|
-| Java (JDK) | 21 | `java -version` |
-| Maven | 3.9+ | `mvn -v` (or use `./mvnw`) |
-| Node.js | 18+ | `node -v` |
-| Angular CLI | 18+ | `ng version` |
-| MongoDB | 6+ | `mongod --version` |
-
----
-
-## Setup & Running Locally
-
-### Step 1 — Clone the repository
-
-```bash
-git clone https://github.com/hasssanraheem/Stella_technology_HR_App.git
-cd Stella_technology_HR_App
-```
-
-### Step 2 — Start MongoDB
-
-```bash
-# macOS (Homebrew)
-brew services start mongodb-community
-
-# Linux
-sudo systemctl start mongod
-```
-
-Verify:
-```bash
-mongosh --eval "db.runCommand({ ping: 1 })"
-# Expected: { ok: 1 }
-```
-
-### Step 3 — Configure the backend
-
-```bash
-cd backend
-cp ../.env.example .env
-```
-
-Edit `backend/.env`:
-
-```env
-MONGO_URI=mongodb://localhost:27017/hr_management_db
-JWT_SECRET=your_long_random_secret_at_least_32_hex_characters
-JWT_EXPIRATION=86400000
-```
-
-Generate a secure secret:
-```bash
-openssl rand -hex 32
-```
-
-### Step 4 — Run the backend
-
-```bash
-# From inside the backend/ directory
-
-# macOS / Linux
-set -a && source .env && set +a
-./mvnw spring-boot:run
-
-# Windows (PowerShell)
-$env:JWT_SECRET="your_secret"; $env:MONGO_URI="mongodb://localhost:27017/hr_management_db"
-.\mvnw.cmd spring-boot:run
-```
-
-Backend starts on **http://localhost:8080**
-
-On first startup the system seeds:
-- Default admin account (`admin@hrms.com` / `Admin@1234`)
-- System "Unassigned" department (DEPT-0000)
-
-### Step 5 — Run the frontend
-
-Open a **new terminal**:
-
-```bash
-cd hr-management-system-frontend
-npm install       # first time only
-ng serve
-```
-
-Frontend starts on **http://localhost:4200**
-
-### Step 6 — Log in
-
-Open **http://localhost:4200** and log in with:
-
-```
-Email:    admin@hrms.com
-Password: Admin@1234
-```
-
-### Recommended first-run order
-
-1. Log in as **Admin** → register one or more HR employees (role: HR, no department needed)
-2. **Departments** → create a department, assign one of the HR users
-3. **Employees** → register regular employees, assign to the department
-4. Log out → log in as **HR** to manage leaves and payroll
-5. Log out → log in as **Employee** to apply for leave and view payroll
-
----
-
 ## Environment Variables
 
 | Variable | Description | Default |
@@ -470,33 +447,6 @@ Authorization: Bearer <jwt_token>
 | `POST` | `/api/payroll/generate` | HR | Generate payroll for a dept employee. Body: `{employeeId, month, year}` |
 | `GET` | `/api/payroll` | ADMIN, HR | All records (ADMIN) or dept records (HR auto-scoped). Query: `month`, `year`, `status` |
 | `PATCH` | `/api/payroll/{id}/status` | HR | Mark PAID or UNPAID. Query: `?status=PAID` |
-
----
-
-## Roles & Permissions
-
-| Feature | ADMIN | HR | EMPLOYEE |
-|---|:---:|:---:|:---:|
-| Register / Edit / Delete employee | ✅ | ❌ | ❌ |
-| Create / Edit / Delete department | ✅ | ❌ | ❌ |
-| Assign HR and manager to department | ✅ | ❌ | ❌ |
-| View all employees (org-wide) | ✅ | ✅ (dept only) | ❌ |
-| View own profile | ✅ | ✅ | ✅ |
-| Apply for leave | ❌ | ✅ | ✅ |
-| View own leave history & balance | ✅ | ✅ | ✅ |
-| View all leaves (org-wide) | ✅ | ❌ | ❌ |
-| View department leaves | ❌ | ✅ | ❌ |
-| Approve / reject employee leaves | ❌ | ✅ (dept only) | ❌ |
-| Approve / reject HR employees' leaves | ✅ | ❌ | ❌ |
-| Generate payroll | ❌ | ✅ (dept only) | ❌ |
-| Mark payroll paid / unpaid | ❌ | ✅ (dept only) | ❌ |
-| View all payroll (org-wide) | ✅ | ❌ | ❌ |
-| View department payroll | ❌ | ✅ | ❌ |
-| View own payroll | ✅ | ✅ | ✅ |
-| Leave balance lookup | ✅ (all) | ✅ (dept only) | ❌ |
-| Add performance note | ✅ | ❌ | ❌ |
-| Change employee type | ✅ | ❌ | ❌ |
-| View employee history | ✅ | ✅ | ✅ (own only) |
 
 ---
 
@@ -576,6 +526,41 @@ A ready-to-use Postman collection organised into four role-based folders:
 
 The backend has **23 unit tests** covering the three core service layers: Employee, Leave, and Payroll. All tests use JUnit 5 and Mockito — no database or running server required.
 
+### What the tests cover
+
+Each test file focuses on one service and tests both the happy path (everything works) and the failure cases (wrong input, missing data, business rule violations):
+
+**EmployeeServiceTest (8 tests)**
+- Adding an employee with a new email → employee saved, leave balance record created automatically
+- Adding an employee with a duplicate email → `DuplicateEmailException` thrown, nothing saved
+- Getting an employee by ID → correct response returned
+- Getting an employee with a non-existent ID → `EmployeeNotFoundException` thrown
+- Updating an employee's designation → saved and a history record created automatically
+- Updating a non-existent employee → `EmployeeNotFoundException` thrown
+- Deleting an employee → `repository.delete()` called
+- Deleting a non-existent employee → `EmployeeNotFoundException` thrown
+
+**LeaveServiceTest (8 tests)**
+- Applying for leave (valid dates, existing employee) → leave saved successfully
+- Applying for leave for a non-existent employee → `EmployeeNotFoundException` thrown
+- Applying with end date before start date → `ValidationException` thrown
+- Approving a pending leave → leave balance decremented by the correct number of days (e.g. 3 days of Annual leave: 20 → 17)
+- Actioning a leave that is already approved → `ValidationException` thrown (only PENDING leaves can be actioned)
+- Actioning a non-existent leave → `LeaveRequestNotFoundException` thrown
+- Getting leave balance for an existing employee → balance returned
+- Getting leave balance for a non-existent employee → `EmployeeNotFoundException` thrown
+
+**PayrollServiceTest (7 tests)**
+- Generating payroll for a valid employee → payroll record saved
+- Generating payroll for a non-existent employee → `EmployeeNotFoundException` thrown
+- Generating payroll that already exists for that employee + month + year → `ValidationException` thrown ("already generated")
+- Getting a payroll record by ID → record returned
+- Getting a non-existent payroll record → `PayrollNotFoundException` thrown
+- Updating payment status (UNPAID → PAID) → status updated and saved
+- Updating status on a non-existent record → `PayrollNotFoundException` thrown
+
+Every test name follows the pattern `methodName_scenario_expectedOutcome` so you can tell what it checks without reading the code.
+
 ### Run the tests
 
 ```bash
@@ -642,6 +627,252 @@ class MyServiceTest {
 
 ---
 
+## Project Structure
+
+```
+Stella_Technology_Final_Project/
+│
+├── backend/                       ← Spring Boot backend
+│   ├── src/main/java/com/HR_Managnet_System/demo/
+│   │   ├── config/                ← SecurityConfig, DataInitializer
+│   │   ├── controller/            ← Auth, Employee, Department, Leave, Payroll
+│   │   ├── dto/                   ← Request / Response DTOs
+│   │   ├── entity/                ← MongoDB @Document entities
+│   │   ├── enums/                 ← Role, LeaveType, LeaveStatus, EmployeeType, PaymentStatus, HistoryType
+│   │   ├── exception/             ← Typed exceptions + GlobalExceptionHandler
+│   │   ├── mapper/                ← Entity ↔ DTO converters
+│   │   ├── repository/            ← Spring Data MongoDB repositories
+│   │   ├── security/              ← JwtAuthFilter, CustomUserDetailsService
+│   │   ├── service/               ← Business logic layer
+│   │   └── util/                  ← JwtUtil
+│   ├── src/main/resources/
+│   │   └── application.yml        ← App config (reads secrets from env vars)
+│   └── src/test/java/com/HR_Managnet_System/demo/service/
+│       ├── EmployeeServiceTest.java   ← 8 unit tests
+│       ├── LeaveServiceTest.java      ← 8 unit tests
+│       └── PayrollServiceTest.java    ← 7 unit tests
+│
+├── hr-management-system-frontend/ ← Angular 22 frontend
+│   └── src/app/
+│       ├── core/
+│       │   ├── guards/            ← authGuard, adminGuard, hrGuard
+│       │   ├── interceptors/      ← JWT interceptor (auto-attaches Bearer token)
+│       │   └── services/          ← AuthService, EmployeeService, DepartmentService,
+│       │                             LeaveService, PayrollService
+│       └── pages/
+│           ├── login/             ← Shared login page
+│           ├── dashboard/         ← Employee self-service dashboard
+│           ├── admin/
+│           │   ├── layout/        ← Admin sidebar shell
+│           │   ├── employees/     ← CRUD, type change, performance notes, history
+│           │   ├── departments/   ← CRUD, HR assignment, manager, reassign employees
+│           │   ├── leaves/        ← Employee Leaves tab (read-only) + HR Leave Approvals tab
+│           │   └── payroll/       ← Org-wide payroll view
+│           └── hr/
+│               ├── layout/        ← HR sidebar shell
+│               ├── leaves/        ← Department Approvals tab + My Leave tab (apply & history)
+│               └── payroll/       ← Generate + mark paid/unpaid for own department
+│
+├── submission/                    ← Project documentation & API specs
+│   ├── openapi.yaml               ← OpenAPI 3.0.3 specification (import into Swagger UI or Postman)
+│   ├── postman_collection.json    ← Role-based Postman collection (Auth, Admin, HR, Employee)
+│   ├── schema.dbml                ← DBML schema for dbdiagram.io
+│   ├── mongodb_schema.md          ← MongoDB collections reference
+│   └── pdf_html/                  ← Source HTML for documentation PDFs
+│
+├── HR_PROJECT_DB_SCHEMA.pdf       ← Visual MongoDB schema — all 7 collections with field types
+├── openapi.yaml                   ← OpenAPI 3.0.3 spec (same as submission/, root copy for easy access)
+├── postman_collection.json        ← Postman collection (same as submission/, root copy for easy access)
+├── .gitignore
+└── README.md
+```
+
+---
+
+## Backend File Structure — Explained
+
+This section walks through every folder inside `backend/src/main/java/com/HR_Managnet_System/demo/` and explains what it does and why it exists. If you have cloned this project and want to understand how it is wired together, start here.
+
+---
+
+### Entry Point
+
+**`DemoApplication.java`** — the `main()` method. This is what Spring Boot runs. Nothing else to know about it.
+
+---
+
+### `config/` — Application Configuration
+
+These three files run at startup and wire everything together. You will rarely touch them after initial setup, but they control security and database connection for the entire application.
+
+**`SecurityConfig.java`** — the most important config file. It defines the security rules for every HTTP endpoint: which routes require a JWT token, which require a specific role (ADMIN, HR, EMPLOYEE), and which are public. It also attaches the `JwtAuthFilter` (see `security/` below) so that every incoming request is checked for a valid token before reaching the controller. It enables `@PreAuthorize` annotations so individual controller methods can declare their own role checks. It sets session policy to **stateless** — the server never creates an HTTP session, so every request must carry its own token.
+
+**`DataInitializer.java`** — runs once on startup. It checks whether the default admin account (`admin@hrms.com`) and the "Unassigned" system department (`DEPT-0000`) already exist in the database. If they don't, it creates them. This is what seeds the first account so you can log in immediately after `docker compose up`.
+
+**`MongoConnectionConfig.java`** — reads `MONGO_URI` from the environment and tells Spring Data MongoDB how to connect to the database.
+
+---
+
+### `controller/` — HTTP Entry Points
+
+Each controller handles one area of the API. They receive an HTTP request, call the service layer to do the work, and return a `ResponseEntity` with the result. Controllers do not contain business logic themselves — that lives in `service/`.
+
+| Controller | Base URL | Responsibility |
+|---|---|---|
+| `AuthController` | `/api/auth` | Login, register user, get current user (`/me`) |
+| `EmployeeController` | `/api/employees` | Register, list, update, delete, change type, performance notes, history, leaves per employee, payroll per employee |
+| `DepartmentController` | `/api/departments` | CRUD, HR assignment, manager assignment, employee reassignment |
+| `LeaveController` | `/api/leaves` | Apply for leave, approve/reject, list leaves, balance lookup |
+| `PayrollController` | `/api/payroll` | Generate payroll, list records, mark paid/unpaid |
+
+---
+
+### `dto/` — Data Transfer Objects
+
+These are the shapes of data going **in** (Request) and **out** (Response) of the API. The controller never exposes raw database entities directly — it always uses DTOs. This keeps the database layer and the API layer decoupled: if you add an internal field to an entity, it won't automatically show up in API responses.
+
+| File | Direction | Purpose |
+|---|---|---|
+| `LoginRequest` | In | Email + password for login |
+| `RegisterRequest` | In | Create a standalone user account |
+| `AuthResponse` | Out | JWT token returned after login |
+| `EmployeeRequest` | In | Register a new employee |
+| `EmployeeUpdateRequest` | In | Partial update (all fields optional) |
+| `EmployeeResponse` | Out | Employee data returned to the client |
+| `DepartmentRequest` | In | Create a department |
+| `DepartmentUpdateRequest` | In | Update a department |
+| `DepartmentResponse` | Out | Department data returned to the client |
+| `LeaveRequestDto` | In | Apply for leave |
+| `LeaveStatusUpdateDto` | In | Approve or reject a leave |
+| `LeaveResponse` | Out | Leave request data |
+| `LeaveBalanceResponse` | Out | Remaining leave days per type |
+| `PayrollRequest` | In | Generate payroll (employeeId, month, year) |
+| `PayrollResponse` | Out | Payroll record with net salary |
+| `PerformanceNoteRequest` | In | Free-text note from admin |
+| `EmployeeHistoryResponse` | Out | One history record |
+| `ApiError` | Out | Standard error response shape |
+
+---
+
+### `entity/` — Database Documents
+
+These classes map directly to MongoDB collections. Each one is annotated with `@Document`, which tells Spring Data MongoDB which collection to read from and write to.
+
+| File | MongoDB Collection | What it stores |
+|---|---|---|
+| `User.java` | `users` | Email, bcrypt password hash, role |
+| `Employee.java` | `employees` | Name, salary, departmentId, employeeType, status |
+| `Department.java` | `departments` | Name, hrId, managerId |
+| `LeaveRequest.java` | `leave_requests` | Start/end dates, type, status, employeeId |
+| `LeaveBalance.java` | `leave_balances` | Annual/casual/sick/unpaid quotas per employee |
+| `Payroll.java` | `payroll` | Net salary, month, year, payment status |
+| `EmployeeHistory.java` | `employee_history` | Type (PROMOTION etc.), timestamp, note |
+
+---
+
+### `enums/` — Fixed Value Sets
+
+Simple Java enums used across entities and DTOs so you never use raw strings for things like roles or statuses.
+
+| Enum | Values |
+|---|---|
+| `Role` | `ADMIN`, `HR`, `EMPLOYEE` |
+| `EmployeeType` | `EMPLOYEE`, `MANAGER`, `HR` |
+| `EmployeeStatus` | `ACTIVE`, `INACTIVE` |
+| `LeaveType` | `ANNUAL`, `CASUAL`, `SICK`, `UNPAID` |
+| `LeaveStatus` | `PENDING`, `APPROVED`, `REJECTED` |
+| `PaymentStatus` | `PAID`, `UNPAID` |
+| `HistoryType` | `PROMOTION`, `DESIGNATION_CHANGE`, `PERFORMANCE_NOTE` |
+
+---
+
+### `exception/` — Error Handling
+
+Two things live here: typed exception classes and the global handler that catches them all.
+
+**Typed exceptions** — one class per error scenario: `EmployeeNotFoundException`, `DuplicateEmailException`, `DepartmentNotFoundException`, and so on. Throwing one of these anywhere in the codebase automatically produces the correct HTTP status code (404 for not-found, 409 for duplicate, 403 for forbidden, etc.).
+
+**`GlobalExceptionHandler.java`** — catches every thrown exception app-wide using Spring's `@ControllerAdvice`. It converts exceptions into a consistent JSON error response (`ApiError`) so every error the API returns looks the same. You never need to write `try/catch` in a controller.
+
+---
+
+### `mapper/` — Entity ↔ DTO Conversion
+
+Each mapper converts between a database entity and its corresponding DTO. The service layer works with DTOs at its boundaries — it receives a request DTO, calls the mapper to get an entity, saves it, then calls the mapper again to get a response DTO. This keeps the service focused on logic rather than data-shape translation.
+
+| Mapper | Converts |
+|---|---|
+| `EmployeeMapper` | `Employee` ↔ `EmployeeRequest` / `EmployeeResponse` |
+| `DepartmentMapper` | `Department` ↔ `DepartmentRequest` / `DepartmentResponse` |
+| `LeaveMapper` | `LeaveRequest` ↔ `LeaveRequestDto` / `LeaveResponse` |
+| `PayrollMapper` | `Payroll` ↔ `PayrollRequest` / `PayrollResponse` |
+
+---
+
+### `repository/` — Database Access
+
+Each repository is an interface extending Spring Data's `MongoRepository`. Spring generates all the database queries automatically from method names — you declare `findByEmail(String email)` and Spring writes the query for you. For more complex lookups a `@Query` annotation is used.
+
+One repository per collection: `UserRepository`, `EmployeeRepository`, `DepartmentRepository`, `LeaveRequestRepository`, `LeaveBalanceRepository`, `PayrollRepository`, `EmployeeHistoryRepository`.
+
+---
+
+### `security/` — JWT Filter
+
+**`JwtAuthFilter.java`** — runs on every incoming request, before the controller is reached. It reads the `Authorization: Bearer <token>` header, validates the JWT signature and expiry, and loads the user into the Spring Security context if the token is valid. If the token is missing or invalid the request is rejected with a `401 Unauthorized` response before it ever reaches your controller.
+
+**`CustomUserDetailsService.java`** — called by Spring Security during authentication. Given an email address, it loads the corresponding `User` from the database. Spring Security uses this to verify credentials at login time.
+
+---
+
+### `service/` — Business Logic
+
+This is where the actual work happens. Services are called by controllers and call repositories. Every rule, every validation, every side effect (like decrementing a leave balance when a request is approved) lives here — not in the controller, and not in the repository.
+
+| Service | Responsibility |
+|---|---|
+| `AuthService` | Login (validate password, issue JWT), register user |
+| `EmployeeService` | CRUD for employees, type change, paginated filtering |
+| `DepartmentService` | CRUD for departments, HR/manager assignment validation, employee reassignment |
+| `LeaveService` | Apply leave, approve/reject (decrements leave balance), balance queries |
+| `PayrollService` | Generate payroll (duplicate check), update payment status, filtered queries |
+| `EmployeeHistoryService` | Create and fetch history records |
+| `CustomUserDetailsService` | Load user from database by email (used by Spring Security) |
+
+---
+
+### `util/` — Utilities
+
+**`JwtUtil.java`** — three jobs: generate a JWT token on login, validate a token on every request, and extract the email from a token. It uses the `JWT_SECRET` environment variable to sign and verify tokens.
+
+---
+
+### How a request flows end-to-end
+
+Here is what happens from the moment an HTTP request arrives to the moment a response goes back:
+
+```
+HTTP Request
+    ↓
+JwtAuthFilter      →  validates token, loads user into security context
+    ↓
+Controller         →  receives request, checks @PreAuthorize role, calls service
+    ↓
+Service            →  runs business logic, calls repository + mapper
+    ↓
+Repository         →  reads from / writes to MongoDB
+    ↓
+Mapper             →  converts entity → response DTO
+    ↓
+Controller         →  returns ResponseEntity with DTO
+    ↓
+HTTP Response
+```
+
+If anything goes wrong at any step — a document not found, a duplicate email, a role that is not allowed — a typed exception is thrown. `GlobalExceptionHandler` catches it and returns a clean, consistent JSON error response. The controller never sees the exception.
+
+---
+
 ## Submission Files
 
 | File | Description |
@@ -650,18 +881,6 @@ class MyServiceTest {
 | `submission/postman_collection.json` | Role-based Postman collection (Auth, Admin, HR, Employee folders) |
 | `submission/schema.dbml` | DBML database schema — import at [dbdiagram.io → Import → DBML](https://dbdiagram.io) |
 | `submission/mongodb_schema.md` | MongoDB collection field reference |
-
----
-
-## Default Admin Account
-
-Seeded automatically on first startup if no admin exists:
-
-| Field | Value |
-|---|---|
-| Email | `admin@hrms.com` |
-| Password | `Admin@1234` |
-| Role | `ADMIN` |
 
 ---
 
