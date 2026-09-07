@@ -256,17 +256,17 @@ Seeded automatically on first startup if no admin exists:
 | View all employees (org-wide) | ✅ | ✅ (dept only) | ❌ |
 | View own profile | ✅ | ✅ | ✅ |
 | Apply for leave | ❌ | ✅ | ✅ |
-| View own leave history & balance | ✅ | ✅ | ✅ |
+| View own leave history & balance | ❌ | ✅ | ✅ |
 | View all leaves (org-wide) | ✅ | ❌ | ❌ |
-| View department leaves | ❌ | ✅ | ❌ |
+| View department leaves | ✅ (via dept filter) | ✅ | ❌ |
 | Approve / reject employee leaves | ❌ | ✅ (dept only) | ❌ |
 | Approve / reject HR employees' leaves | ✅ | ❌ | ❌ |
 | Generate payroll | ❌ | ✅ (dept only) | ❌ |
 | Mark payroll paid / unpaid | ❌ | ✅ (dept only) | ❌ |
 | View all payroll (org-wide) | ✅ | ❌ | ❌ |
-| View department payroll | ❌ | ✅ | ❌ |
-| View own payroll | ✅ | ✅ | ✅ |
-| Leave balance lookup | ✅ (all) | ✅ (dept only) | ❌ |
+| View department payroll | ✅ (via dept filter) | ✅ | ❌ |
+| View own payroll | ❌ | ✅ | ✅ |
+| Leave balance lookup | ✅ (all) | ✅ (dept only) | ✅ (own only) |
 | Add performance note | ✅ | ❌ | ❌ |
 | Change employee type | ✅ | ❌ | ❌ |
 | View employee history | ✅ | ✅ | ✅ (own only) |
